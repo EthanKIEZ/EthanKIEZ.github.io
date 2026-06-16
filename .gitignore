@@ -1,0 +1,14 @@
+# Jekyll generated files
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+
+# Bundler
+vendor/
+.bundle/
+
+# Ruby / OS
+.DS_Store
+*.swp
+*~
