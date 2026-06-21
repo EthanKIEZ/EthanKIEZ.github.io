@@ -1,14 +1,14 @@
 <!-- MathJax support -->
 <script>
-  MathJax = {
+  window.MathJax = {
     tex: {
       inlineMath: [['$', '$'], ['\\(', '\\)']],
       displayMath: [['$$', '$$'], ['\\[', '\\]']],
-      processEscapes: true
+      processEscapes: true,
+      processEnvironments: true
     },
     options: {
-      ignoreHtmlClass: 'no-mathjax',
-      processHtmlClass: 'mathjax'
+      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
     }
   };
 </script>
