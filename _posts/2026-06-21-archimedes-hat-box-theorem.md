@@ -157,12 +157,3 @@ $$A_{cylinder} = 2\pi R h$$
 这个定理展示了多元微积分在几何中的强大威力，也揭示了球面与圆柱之间一个深刻而优美的联系。
 
 ---
-
-## 附录：公式显示说明
-
-本文使用 LaTeX 语法 `$...$` 和 `$$...$$` 书写公式。如果网页上公式没有正常渲染，说明你的 Jekyll 主题尚未启用 MathJax。可以在主题模板中加入以下代码：
-
-```html
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-```
