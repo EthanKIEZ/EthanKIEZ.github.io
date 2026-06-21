@@ -13,6 +13,7 @@ toc: true
 toc_label: "目录"
 toc_icon: "list"
 excerpt: "用简单的多元微积分推导球面面积元公式，并证明阿基米德帽盒定理。"
+mathjax: true
 ---
 
 ## 前言
