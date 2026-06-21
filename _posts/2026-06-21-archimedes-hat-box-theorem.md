@@ -1,8 +1,8 @@
 ---
-title: "Archimedes' Hat-Box Theorem 的证明：球面面积公式与多元微积分推导"
+title: "Archimedes' Hat-Box Theorem 学习笔记：球面面积公式与多元微积分推导"
 date: 2026-06-21 14:00:00 +0800
 categories:
-  - 数学
+  - 学习笔记
 tags:
   - 微积分
   - 几何
@@ -12,241 +12,156 @@ tags:
 toc: true
 toc_label: "目录"
 toc_icon: "list"
-excerpt: "使用简单的多元微积分推导球面面积元公式，并由此证明阿基米德帽盒定理（Archimedes' Hat-Box Theorem）。"
+excerpt: "用简单的多元微积分推导球面面积元公式，并证明阿基米德帽盒定理。"
 ---
 
-## 1. 引言
+## 前言
 
-**阿基米德帽盒定理**（Archimedes' Hat-Box Theorem）是古希腊数学家阿基米德发现的一个美妙结论：
+今天学习了一个非常优美的几何定理——**阿基米德帽盒定理**（Archimedes' Hat-Box Theorem）。它告诉我们：
 
-> 球面上任意一个"球带"（spherical zone）的表面积，等于其外切圆柱上对应带宽的侧面积。
+> 球面上任意一个球带的表面积，等于其外切圆柱上对应带区的侧面积。
 
 换句话说，若球半径为 $R$，球带位于两个平行平面之间，垂直高度为 $h$，则球带表面积为：
 
 $$A = 2\pi R h$$
 
-这与半径为 $R$、高为 $h$ 的圆柱侧面积完全相同。
-
-本文先用多元微积分推导球面面积元，再给出由两条经线和两条纬线围成的球面区域面积公式，最后用它证明帽盒定理。
+这与半径为 $R$、高为 $h$ 的圆柱侧面积完全相同。这篇文章记录完整的推导过程。
 
 ---
 
-## 2. 球面的参数化
+## 1. 球面的参数化
 
-考虑半径为 $R$ 的球面。采用球坐标参数化，设：
+**知识点**：球坐标、参数化曲面
 
-- $\phi$：**余纬度**（co-latitude），从北极点 $N$ 起算，$\phi \in [0, \pi]$
-- $\lambda$：**经度**（longitude），$\lambda \in [0, 2\pi)$
+设球面半径为 $R$，用经度 $\lambda$ 和余纬度 $\phi$（从北极点起算）参数化：
 
-则球面上任意一点的位置向量为：
+$$x = R\sin\phi\cos\lambda, \quad y = R\sin\phi\sin\lambda, \quad z = R\cos\phi$$
 
-$$
-\mathbf{r}(\phi, \lambda) = \begin{pmatrix}
-x \\
- y \\
- z
-\end{pmatrix}
-= \begin{pmatrix}
-R\sin\phi\cos\lambda \\
- R\sin\phi\sin\lambda \\
- R\cos\phi
-\end{pmatrix}
-$$
+其中 $\phi \in [0,\pi]$，$\lambda \in [0,2\pi)$。
+
+> **一句话总结**：用 $\phi$ 和 $\lambda$ 两个角度，可以描述球面上任意一点。
 
 ---
 
-## 3. 球面面积元的推导
+## 2. 球面面积元的推导
 
-### 3.1 计算偏导数
+**知识点**：多元微积分、叉积求面积元
 
-对 $\mathbf{r}$ 分别关于 $\phi$ 和 $\lambda$ 求偏导：
+### 2.1 计算偏导数
 
-$$
-\mathbf{r}_\phi = \frac{\partial \mathbf{r}}{\partial \phi}
-= \begin{pmatrix}
-R\cos\phi\cos\lambda \\
- R\cos\phi\sin\lambda \\
- -R\sin\phi
-\end{pmatrix}
-$$
+$$\mathbf{r}_\phi = \frac{\partial \mathbf{r}}{\partial \phi} = \begin{pmatrix} R\cos\phi\cos\lambda \\ R\cos\phi\sin\lambda \\ -R\sin\phi \end{pmatrix}$$
 
-$$
-\mathbf{r}_\lambda = \frac{\partial \mathbf{r}}{\partial \lambda}
-= \begin{pmatrix}
--R\sin\phi\sin\lambda \\
- R\sin\phi\cos\lambda \\
- 0
-\end{pmatrix}
-$$
+$$\mathbf{r}_\lambda = \frac{\partial \mathbf{r}}{\partial \lambda} = \begin{pmatrix} -R\sin\phi\sin\lambda \\ R\sin\phi\cos\lambda \\ 0 \end{pmatrix}$$
 
-### 3.2 计算叉积
+### 2.2 计算叉积
 
 面积元由两个切向量的叉积模长给出：
 
-$$
-dA = \left| \mathbf{r}_\phi \times \mathbf{r}_\lambda \right| \, d\phi \, d\lambda
-$$
+$$dA = \left| \mathbf{r}_\phi \times \mathbf{r}_\lambda \right| \, d\phi\, d\lambda$$
 
-计算叉积：
+展开并化简后：
 
-$$
-\mathbf{r}_\phi \times \mathbf{r}_\lambda
-= \begin{vmatrix}
-\mathbf{i} & \mathbf{j} & \mathbf{k} \\
- R\cos\phi\cos\lambda & R\cos\phi\sin\lambda & -R\sin\phi \\
- -R\sin\phi\sin\lambda & R\sin\phi\cos\lambda & 0
-\end{vmatrix}
-$$
+$$\boxed{dA = R^2 \sin\phi \, d\phi \, d\lambda}$$
 
-展开得：
-
-$$
-\mathbf{r}_\phi \times \mathbf{r}_\lambda
-= \begin{pmatrix}
-R^2 \sin^2\phi \cos\lambda \\
- R^2 \sin^2\phi \sin\lambda \\
- R^2 \sin\phi\cos\phi
-\end{pmatrix}
-$$
-
-### 3.3 叉积的模长
-
-$$
-\left| \mathbf{r}_\phi \times \mathbf{r}_\lambda \right|
-= R^2 \sin\phi \sqrt{\sin^2\phi\cos^2\lambda + \sin^2\phi\sin^2\lambda + \cos^2\phi}
-$$
-
-由于 $\cos^2\lambda + \sin^2\lambda = 1$，根号内化简为：
-
-$$
-\sin^2\phi + \cos^2\phi = 1
-$$
-
-因此：
-
-$$
-\boxed{dA = R^2 \sin\phi \, d\phi \, d\lambda}
-$$
-
-这就是球面上的面积元公式。
+> **一句话总结**：球面面积元等于 $R^2\sin\phi$，这是后续所有公式的起点。
 
 ---
 
-## 4. 由经线和纬线围成的区域面积
+## 3. 由经线和纬线围成的区域面积
 
-### 4.1 一般公式
+**知识点**：二重积分、球面矩形
 
-考虑球面上由以下四条曲线围成的区域：
+### 3.1 面积公式
 
-- 两条经线：$\lambda = \lambda_1$ 和 $\lambda = \lambda_2$，夹角 $\Delta\lambda = \lambda_2 - \lambda_1$
-- 两条纬线：余纬度 $\phi = \phi_1$ 和 $\phi = \phi_2$
+| 已知条件 | 面积公式 |
+|---------|---------|
+| 经线夹角 $\Delta\lambda$，余纬度 $\phi_1,\phi_2$ | $A = R^2\Delta\lambda \left| \cos\phi_1 - \cos\phi_2 \right|$ |
+| 经线夹角 $\Delta\lambda$，地理纬度 $\theta_1,\theta_2$ | $A = R^2\Delta\lambda \left| \sin\theta_2 - \sin\theta_1 \right|$ |
 
-面积为：
+### 3.2 为什么有两种形式？
 
-$$
-A = \int_{\lambda_1}^{\lambda_2} \int_{\phi_1}^{\phi_2} R^2 \sin\phi \, d\phi \, d\lambda
-$$
+地理纬度 $\theta$ 与余纬度 $\phi$ 的关系为：
 
-先对 $\phi$ 积分：
+$$\theta = \frac{\pi}{2} - \phi$$
 
-$$
-\int_{\phi_1}^{\phi_2} \sin\phi \, d\phi = -\cos\phi \Big|_{\phi_1}^{\phi_2} = \cos\phi_1 - \cos\phi_2
-$$
-
-再对 $\lambda$ 积分：
-
-$$
-A = R^2 \Delta\lambda \left( \cos\phi_1 - \cos\phi_2 \right)
-$$
-
-取绝对值：
-
-$$
-\boxed{A = R^2 \Delta\lambda \left| \cos\phi_1 - \cos\phi_2 \right|}
-$$
-
-### 4.2 用地理纬度表示
-
-地理纬度 $\theta$ 与余纬度 $\phi$ 的关系为 $\theta = \frac{\pi}{2} - \phi$，因此 $\cos\phi = \sin\theta$。
-
-代入得：
-
-$$
-\boxed{A = R^2 \Delta\lambda \left| \sin\theta_2 - \sin\theta_1 \right|}
-$$
-
-其中 $\theta_1, \theta_2$ 为两条纬线的地理纬度。
+因此 $\cos\phi = \sin\theta$。两种形式本质相同，只是坐标选择不同。
 
 ---
 
-## 5. 证明 Archimedes' Hat-Box Theorem
+## 4. 证明 Archimedes' Hat-Box Theorem
 
-### 5.1 球带的定义
+**知识点**：球带、圆柱侧面积
 
-设球面上一个**球带**（spherical zone）由两个平行平面截得，这两个平面垂直于 $z$ 轴，分别位于高度 $z_1$ 和 $z_2$。
+### 4.1 定理内容
 
-由参数化 $z = R\cos\phi = R\sin\theta$，可得：
+> 球面上任意球带的表面积，等于其外切圆柱对应带区的侧面积。
 
-$$
-z_1 = R\sin\theta_1, \quad z_2 = R\sin\theta_2
-$$
+### 4.2 证明过程
 
-球带的垂直高度为：
+设球带位于高度 $z_1$ 和 $z_2$ 之间，垂直高度 $h = |z_2 - z_1|$。
 
-$$
-h = |z_2 - z_1| = R \left| \sin\theta_2 - \sin\theta_1 \right|
-$$
+由于 $z = R\sin\theta$，有：
 
-### 5.2 计算球带面积
+$$h = R \left| \sin\theta_2 - \sin\theta_1 \right|$$
 
-球带绕整个球面一周，因此 $\Delta\lambda = 2\pi$。代入面积公式：
+球带绕球一周，因此 $\Delta\lambda = 2\pi$。代入面积公式：
 
-$$
-A_{\text{sphere}} = R^2 \cdot 2\pi \cdot \left| \sin\theta_2 - \sin\theta_1 \right|
-$$
+$$A_{sphere} = R^2 \cdot 2\pi \cdot \left| \sin\theta_2 - \sin\theta_1 \right| = 2\pi R h$$
 
-整理得：
+而半径为 $R$、高为 $h$ 的圆柱侧面积为：
 
-$$
-A_{\text{sphere}} = 2\pi R \cdot R\left| \sin\theta_2 - \sin\theta_1 \right| = 2\pi R h
-$$
+$$A_{cylinder} = 2\pi R h$$
 
-### 5.3 计算对应圆柱侧面积
+| 几何体 | 面积 |
+|--------|------|
+| 球带 | $2\pi R h$ |
+| 外切圆柱带 | $2\pi R h$ |
 
-考虑半径为 $R$、高为 $h$ 的圆柱，其侧面积为：
+因此 $A_{sphere} = A_{cylinder}$，证毕。
 
-$$
-A_{\text{cylinder}} = 2\pi R h
-$$
-
-### 5.4 结论
-
-因此：
-
-$$
-\boxed{A_{\text{sphere}} = A_{\text{cylinder}} = 2\pi R h}
-$$
-
-这就是 **Archimedes' Hat-Box Theorem**：球面上任意球带的表面积等于其外切圆柱对应带区的侧面积。
+> **一句话总结**：球带面积只与高度 $h$ 有关，与球带位置无关。
 
 ---
 
-## 6. 直观理解
+## 5. 直观理解
 
-帽盒定理最令人惊讶的地方在于：球带的面积只与球带的高度 $h$ 有关，而与球带在球面上的具体位置无关。
+帽盒定理最令人惊讶的地方在于：球带的面积只与高度 $h$ 有关，而与球带在球面上的具体位置无关。
 
-- 靠近赤道的宽带和靠近两极的窄带，只要高度 $h$ 相同，面积就相同
-- 一个半球（$h = R$）的表面积为 $2\pi R^2$，恰好是整个球面面积的一半
+- 靠近赤道的宽带 和 靠近两极的窄带，只要高度相同，面积就相同
+- 一个半球（$h = R$）的表面积为 $2\pi R^2$，正好是整球的一半
 - 整个球面（$h = 2R$）的表面积为 $4\pi R^2$，与经典公式一致
 
 ---
 
-## 7. 总结
+## 6. 核心公式速查
 
-本文通过三个步骤证明了 Archimedes' Hat-Box Theorem：
+| 公式 | 含义 |
+|------|------|
+| $dA = R^2\sin\phi \, d\phi \, d\lambda$ | 球面面积元 |
+| $A = R^2\Delta\lambda \left| \cos\phi_1 - \cos\phi_2 \right|$ | 球面矩形面积（余纬度形式） |
+| $A = R^2\Delta\lambda \left| \sin\theta_2 - \sin\theta_1 \right|$ | 球面矩形面积（地理纬度形式） |
+| $A = 2\pi R h$ | 帽盒定理：球带面积 = 圆柱侧面积 |
+| $S = 4\pi R^2$ | 整球表面积 |
 
-1. **参数化球面**并计算切向量的叉积，得到面积元 $dA = R^2\sin\phi \, d\phi \, d\lambda$
-2. **积分得到球面矩形面积公式**：$A = R^2 \Delta\lambda \left| \cos\phi_1 - \cos\phi_2 \right|$
-3. **令 $\Delta\lambda = 2\pi$**，将球带面积与圆柱侧面积联系起来，得到 $A = 2\pi R h$
+---
 
-这个证明展示了多元微积分在几何中的强大威力，也揭示了球面与圆柱之间一个深刻而优美的联系。
+## 总结
+
+今天通过三个步骤证明了 Archimedes' Hat-Box Theorem：
+
+1. **参数化球面**，用叉积推导出面积元
+2. **积分得到球面矩形面积公式**
+3. **令 $\Delta\lambda = 2\pi$**，证明球带面积等于圆柱侧面积
+
+这个定理展示了多元微积分在几何中的强大威力，也揭示了球面与圆柱之间一个深刻而优美的联系。
+
+---
+
+## 附录：公式显示说明
+
+本文使用 LaTeX 语法 `$...$` 和 `$$...$$` 书写公式。如果网页上公式没有正常渲染，说明你的 Jekyll 主题尚未启用 MathJax。可以在主题模板中加入以下代码：
+
+```html
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+```
