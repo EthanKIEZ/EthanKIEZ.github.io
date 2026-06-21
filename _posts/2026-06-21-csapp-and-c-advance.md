@@ -13,6 +13,7 @@ toc: true
 toc_label: "目录"
 toc_icon: "list"
 excerpt: "深入学习 CS:APP 第三章控制流、过程调用与数组访问，同时推进 C 语言项目到 project12。"
+mathjax: true
 ---
 
 ## 前言
