@@ -7,6 +7,7 @@ main:
     url: /year-archive/
 
   - title: "专题分类"
+    url: "/categories/"
     children:
       - title: "C语言"
         url: "/categories/#c语言"
