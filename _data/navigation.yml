@@ -2,23 +2,11 @@
 main:
   - title: "首页"
     url: /
-
-  - title: "归档"
+  - title: "文章归档"
     url: /year-archive/
-
-  - title: "专题分类"
-    children:
-      - title: "C语言"
-        url: "/categories/#c语言"
-      - title: "数学"
-        url: "/categories/#数学"
-      - title: "学习笔记"
-        url: "/categories/#学习笔记"
-      - title: "随笔"
-        url: "/categories/#随笔"
-
+  - title: "分类"
+    url: /categories/
   - title: "标签"
     url: /tags/
-
   - title: "关于"
     url: /about/
