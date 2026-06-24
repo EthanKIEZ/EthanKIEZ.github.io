@@ -9,13 +9,13 @@ main:
   - title: "专题分类"
     children:
       - title: "C语言"
-        url: /categories/#c语言
+        url: "/categories/#c语言"
       - title: "数学"
-        url: /categories/#数学
+        url: "/categories/#数学"
       - title: "学习笔记"
-        url: /categories/#学习笔记
+        url: "/categories/#学习笔记"
       - title: "随笔"
-        url: /categories/#随笔
+        url: "/categories/#随笔"
 
   - title: "标签"
     url: /tags/
