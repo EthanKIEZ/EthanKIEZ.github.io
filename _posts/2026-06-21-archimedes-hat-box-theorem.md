@@ -2,7 +2,7 @@
 title: "Archimedes' Hat-Box Theorem 学习笔记：用旋转曲面推导球面面积元"
 date: 2026-06-21 14:00:00 +0800
 categories:
-  - 学习笔记
+  - 数学
 tags:
   - 微积分
   - 几何
