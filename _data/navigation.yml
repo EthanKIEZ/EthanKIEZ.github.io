@@ -11,10 +11,10 @@ main:
     children:
       - title: "C语言"
         url: "/categories/#c语言"
+      - title: "算法"
+        url: "/categories/#算法"
       - title: "数学"
         url: "/categories/#数学"
-      - title: "学习笔记"
-        url: "/categories/#学习笔记"
       - title: "随笔"
         url: "/categories/#随笔"
 
