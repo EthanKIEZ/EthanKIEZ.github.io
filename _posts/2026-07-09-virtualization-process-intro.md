@@ -75,6 +75,54 @@ CPU 调度用的是时分共享；内存、磁盘用的是空分共享。
 
 这时，一个静态的程序就变成了动态的进程。
 
+### 1.6 数据结构：进程列表与 PCB
+
+操作系统本身也是程序，它需要用数据结构来跟踪系统中的所有进程。
+
+- **进程列表 / 任务列表（Process List / Task List）**：保存系统中所有进程信息的列表，每个条目就是一个 PCB。
+- **进程控制块 PCB（Process Control Block）**，也叫进程描述符：保存单个进程的所有关键状态。
+
+下面是 xv6 内核中 `struct proc` 的简化版本，它展示了 OS 需要记录哪些信息：
+
+```c
+// 进程可能处于的状态
+enum proc_state { UNUSED, EMBRYO, SLEEPING,
+                  RUNNABLE, RUNNING, ZOMBIE };
+
+struct proc {
+    char *mem;              // 进程内存起始地址
+    uint sz;                // 进程内存大小
+    char *kstack;           // 内核栈底部
+    enum proc_state state;  // 当前状态
+    int pid;                // 进程 ID
+    struct proc *parent;    // 父进程
+    void *chan;             // 如果非空，表示正在某个事件上睡眠
+    int killed;             // 是否被终止
+    struct file *ofile[NOFILE]; // 打开的文件
+    struct inode *cwd;      // 当前工作目录
+    struct context context; // 寄存器上下文，用于上下文切换
+    struct trapframe *tf;   // 当前中断的陷阱帧
+};
+```
+
+关键字段含义：
+
+| 字段 | 作用 |
+|------|------|
+| `state` | 进程当前状态，如 RUNNABLE（READY）、RUNNING、SLEEPING（BLOCKED）、ZOMBIE |
+| `context` | 保存寄存器上下文，上下文切换时保存/恢复 |
+| `parent` | 指向父进程，构成进程树 |
+| `ofile` | 进程打开的文件描述符 |
+| `cwd` | 当前工作目录 |
+
+为了高效调度，操作系统还会维护不同的队列或列表：
+
+- **就绪队列（Ready Queue）**：所有等待 CPU 的进程
+- **等待队列（Wait Queue）**：按等待事件分类的阻塞进程
+- **僵尸进程（Zombie）**：已终止但尚未被父进程回收的进程
+
+> **Zombie 状态**：进程结束后，内核会保留它的退出码，直到父进程调用 `wait()` 来“收尸”。如果父进程一直不 `wait()`， terminated 进程就会一直占用 PCB，变成僵尸进程。
+
 ## 二、用 process-run.py 理解调度与 I/O/CPU 重叠
 
 > **核心问题**：进程调度的本质是如何在多个进程之间分配 CPU，同时尽可能让 I/O 设备也忙碌起来。
