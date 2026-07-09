@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "虚拟化：进程入门"
+title: "虚拟化：<span class="key-term">进程</span>入门"
 date: 2026-07-09 00:00:00 +0800
 categories:
   - 操作系统
@@ -8,17 +8,22 @@ categories:
 tags:
   - OS
   - 虚拟化
-  - 进程
+  - <span class="key-term">进程</span>
   - OSTEP
   - process-run.py
-excerpt: "结合 OSTEP 第四章理论与 process-run.py 模拟实验，理解进程抽象、时分/空分共享、进程状态，以及进程调度中 CPU 与 I/O 的重叠策略。"
+excerpt: "结合 OSTEP 第四章理论与 process-run.py 模拟实验，理解<span class="key-term">进程</span>抽象、时分/<span class="key-term">空分共享</span>、<span class="key-term">进程</span>状态，以及<span class="key-term">进程</span>调度中 CPU 与 I/O 的重叠策略。"
 toc: true
 toc_label: "目录"
 toc_icon: "list"
 toc_sticky: true
 ---
 
-# 虚拟化：进程入门
+<style>
+.key-term { color: #d32f2f; font-weight: bold; }
+.big-point { color: #1565c0; font-size: 1.15em; font-weight: bold; }
+</style>
+
+# 虚拟化：<span class="key-term">进程</span>入门
 
 > **适合人群**：正在学习操作系统、尤其是 OSTEP（Operating Systems: Three Easy Pieces）第四章的读者。
 {: .notice--info}
@@ -26,59 +31,59 @@ toc_sticky: true
 > **配套工具**：本文所有模拟实验均使用 OSTEP 官方提供的 `process-run.py` 完成。
 {: .notice--info}
 
-## 一、进程抽象的核心概念
+## 一、<span class="key-term">进程</span>抽象的核心概念
 
-### 1.1 进程就是运行中的程序
+### 1.1 <span class="key-term">进程</span>就是运行中的程序
 
-> **知识点**：程序是静态的二进制文件，进程是运行中的程序及其状态的集合。
+> **知识点**：程序是静态的二进制文件，<span class="key-term">进程</span>是运行中的程序及其状态的集合。
 {: .notice--primary}
 
-程序本身只是磁盘上的二进制文件，是“死”的。操作系统把程序加载到内存、分配资源、让它跑起来之后，才成为一个**进程（process）**。所以：
+程序本身只是磁盘上的二进制文件，是“死”的。操作系统把程序加载到内存、分配资源、让它跑起来之后，才成为一个**<span class="key-term">进程</span>（process）**。所以：
 
-> 进程 = 运行中的程序 + 它的状态 + 占用的资源
+> <span class="key-term">进程</span> = 运行中的程序 + 它的状态 + 占用的资源
 
-### 1.2 时分共享（Time Sharing）与空分共享（Space Sharing）
+### 1.2 <span class="key-term">时分共享</span>（Time Sharing）与<span class="key-term">空分共享</span>（Space Sharing）
 
-> **知识点**：操作系统通过时分共享轮流使用 CPU，通过空分共享划分内存/磁盘空间。
+> **知识点**：操作系统通过<span class="key-term">时分共享</span>轮流使用 CPU，通过<span class="key-term">空分共享</span>划分内存/磁盘空间。
 {: .notice--primary}
 
-操作系统要同时服务多个进程，本质上用了两种共享技术：
+操作系统要同时服务多个<span class="key-term">进程</span>，本质上用了两种共享技术：
 
-- **时分共享 Time Sharing**：同一资源（比如 CPU）轮流给不同进程使用一小段时间。因为切换得很快，用户感觉多个程序在“同时”运行。
-- **空分共享 Space Sharing**：把资源按空间切分，不同进程各占一块。比如内存被划分为不同地址空间，磁盘被划分为不同文件。
+- **<span class="key-term">时分共享</span> Time Sharing**：同一资源（比如 CPU）轮流给不同<span class="key-term">进程</span>使用一小段时间。因为切换得很快，用户感觉多个程序在“同时”运行。
+- **<span class="key-term">空分共享</span> Space Sharing**：把资源按空间切分，不同<span class="key-term">进程</span>各占一块。比如内存被划分为不同地址空间，磁盘被划分为不同文件。
 
-CPU 调度用的是时分共享；内存、磁盘用的是空分共享。
+CPU 调度用的是<span class="key-term">时分共享</span>；内存、磁盘用的是<span class="key-term">空分共享</span>。
 
-### 1.3 进程的机器状态
+### 1.3 <span class="key-term">进程</span>的机器状态
 
-> **知识点**：进程的机器状态包括 PC、寄存器和地址空间，这些信息保存在 PCB 中。
+> **知识点**：<span class="key-term">进程</span>的机器状态包括 PC、寄存器和地址空间，这些信息保存在 <span class="key-term">PCB</span> 中。
 {: .notice--primary}
 
-进程运行时，操作系统需要保存它的“现场”，主要包括：
+<span class="key-term">进程</span>运行时，操作系统需要保存它的“现场”，主要包括：
 
 - **程序计数器 PC**：下一条要执行的指令地址
 - **寄存器**：通用寄存器、栈指针等
 - **地址空间**：代码段、堆、栈等
 
-这些信息存放在 **进程控制块 PCB（Process Control Block）** 里。切换进程时，OS 保存旧进程的 PCB，加载新进程的 PCB，这就是上下文切换。
+这些信息存放在 **<span class="key-term">进程</span>控制块 <span class="key-term">PCB</span>（Process Control Block）** 里。切换<span class="key-term">进程</span>时，OS 保存旧<span class="key-term">进程</span>的 <span class="key-term">PCB</span>，加载新<span class="key-term">进程</span>的 <span class="key-term">PCB</span>，这就是<span class="key-term">上下文切换</span>。
 
-### 1.4 进程状态
+### 1.4 <span class="key-term">进程</span>状态
 
-> **知识点**：进程在 RUNNING、READY、BLOCKED 等状态之间转换，状态变化由调度、I/O 等事件触发。
+> **知识点**：<span class="key-term">进程</span>在 <span class="key-term">RUNNING</span>、<span class="key-term">READY</span>、<span class="key-term">BLOCKED</span> 等状态之间转换，状态变化由调度、I/O 等事件触发。
 {: .notice--primary}
 
-一个进程在生命周期中会在几个状态之间转换：
+一个<span class="key-term">进程</span>在生命周期中会在几个状态之间转换：
 
-- **RUNNING**：正在 CPU 上执行
-- **READY**：准备好运行，等待 CPU 调度
-- **BLOCKED**：等待某事件完成（通常是 I/O）
+- **<span class="key-term">RUNNING</span>**：正在 CPU 上执行
+- **<span class="key-term">READY</span>**：准备好运行，等待 CPU 调度
+- **<span class="key-term">BLOCKED</span>**：等待某事件完成（通常是 I/O）
 
 状态转换主要由以下事件触发：
 
-- 被调度器选中 → RUNNING
-- 时间片用完或被抢占 → READY
-- 发起 I/O → BLOCKED
-- I/O 完成 → READY
+- 被调度器选中 → <span class="key-term">RUNNING</span>
+- 时间片用完或被抢占 → <span class="key-term">READY</span>
+- 发起 I/O → <span class="key-term">BLOCKED</span>
+- I/O 完成 → <span class="key-term">READY</span>
 
 可以用下面的状态图直观表示：
 
@@ -115,9 +120,9 @@ CPU 调度用的是时分共享；内存、磁盘用的是空分共享。
   <text x="435" y="135" class="label">执行完毕</text>
 </svg>
 
-### 1.5 从程序到进程：加载
+### 1.5 从程序到<span class="key-term">进程</span>：加载
 
-> **知识点**：操作系统通过加载程序、分配地址空间、初始化栈/堆，把静态程序变成动态进程。
+> **知识点**：操作系统通过加载程序、分配地址空间、初始化栈/堆，把静态程序变成动态<span class="key-term">进程</span>。
 {: .notice--primary}
 
 操作系统加载程序时大致做：
@@ -127,17 +132,17 @@ CPU 调度用的是时分共享；内存、磁盘用的是空分共享。
 3. 初始化栈和堆指针
 4. 跳到入口点开始执行
 
-这时，一个静态的程序就变成了动态的进程。
+这时，一个静态的程序就变成了动态的<span class="key-term">进程</span>。
 
-### 1.6 数据结构：进程列表与 PCB
+### 1.6 数据结构：<span class="key-term">进程</span>列表与 <span class="key-term">PCB</span>
 
-> **知识点**：操作系统用进程列表和 PCB 跟踪每个进程；xv6 的 `struct proc` 是一个典型实现。
+> **知识点**：操作系统用<span class="key-term">进程</span>列表和 <span class="key-term">PCB</span> 跟踪每个<span class="key-term">进程</span>；xv6 的 `struct proc` 是一个典型实现。
 {: .notice--primary}
 
-操作系统本身也是程序，它需要用数据结构来跟踪系统中的所有进程。
+操作系统本身也是程序，它需要用数据结构来跟踪系统中的所有<span class="key-term">进程</span>。
 
-- **进程列表 / 任务列表（Process List / Task List）**：保存系统中所有进程信息的列表，每个条目就是一个 PCB。
-- **进程控制块 PCB（Process Control Block）**，也叫进程描述符：保存单个进程的所有关键状态。
+- **<span class="key-term">进程</span>列表 / 任务列表（Process List / Task List）**：保存系统中所有<span class="key-term">进程</span>信息的列表，每个条目就是一个 <span class="key-term">PCB</span>。
+- **<span class="key-term">进程</span>控制块 <span class="key-term">PCB</span>（Process Control Block）**，也叫<span class="key-term">进程</span>描述符：保存单个<span class="key-term">进程</span>的所有关键状态。
 
 下面是 xv6 内核中 `struct proc` 的简化版本，它展示了 OS 需要记录哪些信息：
 
@@ -166,45 +171,45 @@ struct proc {
 
 | 字段 | 作用 |
 |------|------|
-| `state` | 进程当前状态，如 RUNNABLE（READY）、RUNNING、SLEEPING（BLOCKED）、ZOMBIE |
-| `context` | 保存寄存器上下文，上下文切换时保存/恢复 |
-| `parent` | 指向父进程，构成进程树 |
-| `ofile` | 进程打开的文件描述符 |
+| `state` | <span class="key-term">进程</span>当前状态，如 RUNNABLE（<span class="key-term">READY</span>）、<span class="key-term">RUNNING</span>、SLEEPING（<span class="key-term">BLOCKED</span>）、<span class="key-term">ZOMBIE</span> |
+| `context` | 保存寄存器上下文，<span class="key-term">上下文切换</span>时保存/恢复 |
+| `parent` | 指向父<span class="key-term">进程</span>，构成<span class="key-term">进程</span>树 |
+| `ofile` | <span class="key-term">进程</span>打开的文件描述符 |
 | `cwd` | 当前工作目录 |
 
 为了高效调度，操作系统还会维护不同的队列或列表：
 
-- **就绪队列（Ready Queue）**：所有等待 CPU 的进程
-- **等待队列（Wait Queue）**：按等待事件分类的阻塞进程
-- **僵尸进程（Zombie）**：已终止但尚未被父进程回收的进程
+- **就绪队列（Ready Queue）**：所有等待 CPU 的<span class="key-term">进程</span>
+- **等待队列（Wait Queue）**：按等待事件分类的阻塞<span class="key-term">进程</span>
+- **僵尸<span class="key-term">进程</span>（Zombie）**：已终止但尚未被父<span class="key-term">进程</span>回收的<span class="key-term">进程</span>
 
-> **Zombie 状态**：进程结束后，内核会保留它的退出码，直到父进程调用 `wait()` 来“收尸”。如果父进程一直不 `wait()`， terminated 进程就会一直占用 PCB，变成僵尸进程。
+> **Zombie 状态**：<span class="key-term">进程</span>结束后，内核会保留它的退出码，直到父<span class="key-term">进程</span>调用 `wait()` 来“收尸”。如果父<span class="key-term">进程</span>一直不 `wait()`， terminated <span class="key-term">进程</span>就会一直占用 <span class="key-term">PCB</span>，变成僵尸<span class="key-term">进程</span>。
 {: .notice--warning}
 
 ## 二、用 process-run.py 理解调度与 I/O/CPU 重叠
 
-> **核心问题**：进程调度的本质是如何在多个进程之间分配 CPU，同时尽可能让 I/O 设备也忙碌起来。
+> **核心问题**：<span class="key-term">进程</span>调度的本质是如何在多个<span class="key-term">进程</span>之间分配 CPU，同时尽可能让 I/O 设备也忙碌起来。
 {: .notice--info}
 
-`process-run.py` 是 OSTEP 第四章的模拟器，用来观察不同进程组合和调度策略下的行为。
+`process-run.py` 是 OSTEP 第四章的模拟器，用来观察不同<span class="key-term">进程</span>组合和调度策略下的行为。
 
 ### 2.1 模拟器基本参数
 
-- `-l X:Y`：生成一个进程，`X` 是指令数，`Y` 是每条指令为 CPU 指令的概率（%）
+- `-l X:Y`：生成一个<span class="key-term">进程</span>，`X` 是指令数，`Y` 是每条指令为 CPU 指令的概率（%）
   - `5:100`：5 条全是 CPU
   - `1:0`：1 条是 I/O
   - `3:50`：3 条，每条 50% 概率是 CPU 或 I/O
-- `-S`：进程切换策略，决定操作系统何时把 CPU 从当前进程移交给另一个进程
-  - `SWITCH_ON_IO`：当前进程执行 `io` 指令发起 I/O 时，操作系统立即把它置为 `BLOCKED`，并切换到下一个 `READY` 进程。也就是说，**进程一旦开始等 I/O，就主动出让 CPU**，避免 CPU 空转。
-  - `SWITCH_ON_END`：只有当当前进程执行完所有指令（`DONE`）后，操作系统才切换进程。如果当前进程因 I/O 阻塞，操作系统也不会切走，CPU 只能空转，直到该进程 I/O 完成。
+- `-S`：<span class="key-term">进程</span>切换策略，决定操作系统何时把 CPU 从当前<span class="key-term">进程</span>移交给另一个<span class="key-term">进程</span>
+  - `SWITCH_ON_IO`：当前<span class="key-term">进程</span>执行 `io` 指令发起 I/O 时，操作系统立即把它置为 `BLOCKED`，并切换到下一个 `READY` <span class="key-term">进程</span>。也就是说，**<span class="key-term">进程</span>一旦开始等 I/O，就主动出让 CPU**，避免 CPU 空转。
+  - `SWITCH_ON_END`：只有当当前<span class="key-term">进程</span>执行完所有指令（`DONE`）后，操作系统才切换<span class="key-term">进程</span>。如果当前<span class="key-term">进程</span>因 I/O 阻塞，操作系统也不会切走，CPU 只能空转，直到该<span class="key-term">进程</span> I/O 完成。
 - `-I`：I/O 完成后的调度策略，决定 I/O 完成时谁获得 CPU
-  - `IO_RUN_LATER`：I/O 完成后，发起 I/O 的进程回到 `READY` 队列，但不抢占当前正在运行的进程；调度器按正常规则稍后调度它。只有当系统中没有其它可运行进程时，它才会立即执行。
-  - `IO_RUN_IMMEDIATE`：I/O 完成后，发起 I/O 的进程**立即被调度运行**。如果 CPU 上正有别的进程在运行，该进程会被抢占回 `READY`，I/O 完成进程立刻获得 CPU。
+  - `IO_RUN_LATER`：I/O 完成后，发起 I/O 的<span class="key-term">进程</span>回到 `READY` 队列，但不抢占当前正在运行的<span class="key-term">进程</span>；调度器按正常规则稍后调度它。只有当系统中没有其它可运行<span class="key-term">进程</span>时，它才会立即执行。
+  - `IO_RUN_IMMEDIATE`：I/O 完成后，发起 I/O 的<span class="key-term">进程</span>**立即被调度运行**。如果 CPU 上正有别的<span class="key-term">进程</span>在运行，该<span class="key-term">进程</span>会被抢占回 `READY`，I/O 完成<span class="key-term">进程</span>立刻获得 CPU。
 - `-L`：一次 I/O 的等待时长（默认 5 个 tick），即 I/O 设备实际工作的时间
 - `-c`：直接给出答案（运行模拟）
 - `-p`：打印统计信息
 
-> **注意**：`io` 指令本身只占 **1 个 CPU tick**（用于向操作系统发起 I/O 请求），随后进程会阻塞 `-L` 个 tick（即 I/O 设备实际工作的时间，默认 5），I/O 完成时再用 **1 个 CPU tick** 执行 `io_done`。所以一次完整的 I/O 总耗时 = `1 + -L + 1`。
+> **注意**：`io` 指令本身只占 **1 个 CPU tick**（用于向操作系统发起 I/O 请求），随后<span class="key-term">进程</span>会阻塞 `-L` 个 tick（即 I/O 设备实际工作的时间，默认 5），I/O 完成时再用 **1 个 CPU tick** 执行 `io_done`。所以一次完整的 I/O 总耗时 = `1 + -L + 1`。
 {: .notice--warning}
 
 ### 2.2 process-run.py 完整代码
@@ -577,27 +582,27 @@ if options.print_stats:
 > - 配套教材页面：[Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/)
 {: .notice--info}
 
-> **阅读建议**：对照代码重点关注 `run()` 方法里的主循环，以及 `next_proc()`、`move_to_wait()`、`move_to_ready()` 这几个函数，它们共同实现了简化的上下文切换逻辑。
+> **阅读建议**：对照代码重点关注 `run()` 方法里的主循环，以及 `next_proc()`、`move_to_wait()`、`move_to_ready()` 这几个函数，它们共同实现了简化的<span class="key-term">上下文切换</span>逻辑。
 {: .notice--tip}
 
 ### 2.3 关键实验与发现
 
-#### 实验 1：进程顺序决定总时间
+#### 实验 1：<span class="key-term">进程</span>顺序决定总时间
 
 - `-l 4:100,1:0`：CPU 先跑完，再发起 I/O
   - 总时间 11，CPU 利用率 54.55%
 - `-l 1:0,4:100`：I/O 先发起，CPU 在 I/O 等待期间运行
   - 总时间 7，CPU 利用率 85.71%
 
-> **结论**：把 I/O 密集型进程放在前面，可以让 CPU 与 I/O 重叠，显著缩短总时间。
+> **结论**：把 I/O 密集型<span class="key-term">进程</span>放在前面，可以让 CPU 与 I/O 重叠，显著缩短总时间。
 {: .notice--success}
 
-#### 实验 2：切换策略 SWITCH_ON_END vs SWITCH_ON_IO
+#### 实验 2：切换策略 <span class="key-term">SWITCH_ON_END</span> vs <span class="key-term">SWITCH_ON_IO</span>
 
 | 策略 | 总时间 | CPU 利用率 |
 |---|---|---|
-| SWITCH_ON_END | 11 | 54.55% |
-| SWITCH_ON_IO | 7 | 85.71% |
+| <span class="key-term">SWITCH_ON_END</span> | 11 | 54.55% |
+| <span class="key-term">SWITCH_ON_IO</span> | 7 | 85.71% |
 
 从策略含义理解：
 
@@ -613,32 +618,32 @@ if options.print_stats:
 
 | I/O 完成策略 | 总时间 | CPU 利用率 | I/O 利用率 |
 |---|---|---|---|
-| IO_RUN_LATER | 31 | 67.74% | 48.39% |
-| IO_RUN_IMMEDIATE | 21 | 100.00% | 71.43% |
+| <span class="key-term">IO_RUN_LATER</span> | 31 | 67.74% | 48.39% |
+| <span class="key-term">IO_RUN_IMMEDIATE</span> | 21 | 100.00% | 71.43% |
 
 从策略含义理解：
 
 - `IO_RUN_LATER` 下，PID 0 的 I/O 完成后只是回到 `READY`，不会抢回 CPU。此时 CPU 正忙着运行 PID 1/2/3，所以 PID 0 只能等它们全部结束后才执行 `io_done`，导致 I/O 设备在最后长时间空闲。
-- `IO_RUN_IMMEDIATE` 下，PID 0 的 I/O 一完成就立即被调度，抢占当前运行的进程，执行 `io_done` 并立刻发出下一次 I/O。这样 I/O 设备几乎不停，CPU 也能被其它进程填满，总时间更短。
+- `IO_RUN_IMMEDIATE` 下，PID 0 的 I/O 一完成就立即被调度，抢占当前运行的<span class="key-term">进程</span>，执行 `io_done` 并立刻发出下一次 I/O。这样 I/O 设备几乎不停，CPU 也能被其它<span class="key-term">进程</span>填满，总时间更短。
 
-> **结论**：`IO_RUN_IMMEDIATE` 能让 I/O 设备保持忙碌；`IO_RUN_LATER` 在存在多个 CPU 进程时容易造成 I/O 空闲。
+> **结论**：`IO_RUN_IMMEDIATE` 能让 I/O 设备保持忙碌；`IO_RUN_LATER` 在存在多个 CPU <span class="key-term">进程</span>时容易造成 I/O 空闲。
 {: .notice--success}
 
-#### 实验 4：随机进程
+#### 实验 4：随机<span class="key-term">进程</span>
 
 对 `-s N -l 3:50,3:50` 测试不同种子和策略，结果如下：
 
 | seed | 策略 | 总时间 | CPU 利用率 | I/O 利用率 |
 |---|---|---|---|---|
-| 1 | SWITCH_ON_IO + LATER | 15 | 53.33% | 66.67% |
-| 1 | SWITCH_ON_IO + IMMEDIATE | 15 | 53.33% | 66.67% |
-| 1 | SWITCH_ON_END + LATER | 18 | 44.44% | 55.56% |
-| 2 | SWITCH_ON_IO + LATER | 16 | 62.50% | 87.50% |
-| 2 | SWITCH_ON_IO + IMMEDIATE | 16 | 62.50% | 87.50% |
-| 2 | SWITCH_ON_END + LATER | 30 | 33.33% | 66.67% |
-| 3 | SWITCH_ON_IO + LATER | 18 | 50.00% | 61.11% |
-| 3 | SWITCH_ON_IO + IMMEDIATE | 17 | 52.94% | 64.71% |
-| 3 | SWITCH_ON_END + LATER | 24 | 37.50% | 62.50% |
+| 1 | <span class="key-term">SWITCH_ON_IO</span> + LATER | 15 | 53.33% | 66.67% |
+| 1 | <span class="key-term">SWITCH_ON_IO</span> + IMMEDIATE | 15 | 53.33% | 66.67% |
+| 1 | <span class="key-term">SWITCH_ON_END</span> + LATER | 18 | 44.44% | 55.56% |
+| 2 | <span class="key-term">SWITCH_ON_IO</span> + LATER | 16 | 62.50% | 87.50% |
+| 2 | <span class="key-term">SWITCH_ON_IO</span> + IMMEDIATE | 16 | 62.50% | 87.50% |
+| 2 | <span class="key-term">SWITCH_ON_END</span> + LATER | 30 | 33.33% | 66.67% |
+| 3 | <span class="key-term">SWITCH_ON_IO</span> + LATER | 18 | 50.00% | 61.11% |
+| 3 | <span class="key-term">SWITCH_ON_IO</span> + IMMEDIATE | 17 | 52.94% | 64.71% |
+| 3 | <span class="key-term">SWITCH_ON_END</span> + LATER | 24 | 37.50% | 62.50% |
 
 规律：
 
@@ -646,17 +651,17 @@ if options.print_stats:
 - `IO_RUN_IMMEDIATE` 在存在多次 I/O 时通常能进一步缩短时间。
 - 当 I/O 很少或只发生一次时，两种 I/O 策略差别不明显。
 
-### 2.4 简化的上下文切换图景
+### 2.4 简化的<span class="key-term">上下文切换</span>图景
 
 把这些实验串起来，可以画出操作系统调度的核心逻辑：
 
-1. CPU 上运行的进程发起 I/O。
-2. 如果策略是 `SWITCH_ON_IO`，OS 保存该进程的 PCB，把它设为 BLOCKED，然后选择另一个 READY 进程运行。
-3. I/O 设备在后台工作，CPU 同时执行别的进程。
-4. I/O 完成后，进程变为 READY。
+1. CPU 上运行的<span class="key-term">进程</span>发起 I/O。
+2. 如果策略是 `SWITCH_ON_IO`，OS 保存该<span class="key-term">进程</span>的 <span class="key-term">PCB</span>，把它设为 <span class="key-term">BLOCKED</span>，然后选择另一个 <span class="key-term">READY</span> <span class="key-term">进程</span>运行。
+3. I/O 设备在后台工作，CPU 同时执行别的<span class="key-term">进程</span>。
+4. I/O 完成后，<span class="key-term">进程</span>变为 <span class="key-term">READY</span>。
 5. 根据 `IO_RUN_IMMEDIATE` 或 `IO_RUN_LATER`，OS 决定是立刻恢复它，还是让它排队等待调度。
 
-这就是现代操作系统里 **CPU 虚拟化** 的最基本形式：通过时分共享，让多个进程“同时”推进，并通过合理调度隐藏 I/O 延迟。
+这就是现代操作系统里 **<span class="key-term">CPU 虚拟化</span>** 的最基本形式：通过<span class="key-term">时分共享</span>，让多个<span class="key-term">进程</span>“同时”推进，并通过合理调度隐藏 I/O 延迟。
 
 下面用甘特图展示 `-l 1:0,4:100 -S SWITCH_ON_IO` 的调度过程：
 
@@ -736,16 +741,16 @@ Time        PID: 0           CPU           IOs
 ```text
 Time        PID: 0           CPU           IOs
   1         RUN:io             1
-  2        BLOCKED                           1
+  2        <span class="key-term">BLOCKED</span>                           1
   3*   RUN:io_done             1
   4         RUN:io             1
-  5        BLOCKED                           1
+  5        <span class="key-term">BLOCKED</span>                           1
   6*   RUN:io_done             1
   7         RUN:io             1
-  8        BLOCKED                           1
+  8        <span class="key-term">BLOCKED</span>                           1
   9*   RUN:io_done             1
  10         RUN:io             1
- 11        BLOCKED                           1
+ 11        <span class="key-term">BLOCKED</span>                           1
  12*   RUN:io_done             1
 
 Stats: Total Time 12
