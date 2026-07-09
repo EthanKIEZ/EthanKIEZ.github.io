@@ -140,13 +140,13 @@ struct proc {
   - `5:100`：5 条全是 CPU
   - `1:0`：1 条是 I/O
   - `3:50`：3 条，每条 50% 概率是 CPU 或 I/O
-- `-S`：进程切换策略
-  - `SWITCH_ON_IO`：当前进程发起 I/O 时切换
-  - `SWITCH_ON_END`：当前进程完全结束后才切换
-- `-I`：I/O 完成后的处理策略
-  - `IO_RUN_LATER`：I/O 完成后进程进入就绪队列，等调度
-  - `IO_RUN_IMMEDIATE`：I/O 完成后立即运行该进程
-- `-L`：一次 I/O 的等待时长（默认 5 个 tick）
+- `-S`：进程切换策略，决定操作系统何时把 CPU 从当前进程移交给另一个进程
+  - `SWITCH_ON_IO`：当前进程执行 `io` 指令发起 I/O 时，操作系统立即把它置为 `BLOCKED`，并切换到下一个 `READY` 进程。也就是说，**进程一旦开始等 I/O，就主动出让 CPU**，避免 CPU 空转。
+  - `SWITCH_ON_END`：只有当当前进程执行完所有指令（`DONE`）后，操作系统才切换进程。如果当前进程因 I/O 阻塞，操作系统也不会切走，CPU 只能空转，直到该进程 I/O 完成。
+- `-I`：I/O 完成后的调度策略，决定 I/O 完成时谁获得 CPU
+  - `IO_RUN_LATER`：I/O 完成后，发起 I/O 的进程回到 `READY` 队列，但不抢占当前正在运行的进程；调度器按正常规则稍后调度它。只有当系统中没有其它可运行进程时，它才会立即执行。
+  - `IO_RUN_IMMEDIATE`：I/O 完成后，发起 I/O 的进程**立即被调度运行**。如果 CPU 上正有别的进程在运行，该进程会被抢占回 `READY`，I/O 完成进程立刻获得 CPU。
+- `-L`：一次 I/O 的等待时长（默认 5 个 tick），即 I/O 设备实际工作的时间
 - `-c`：直接给出答案（运行模拟）
 - `-p`：打印统计信息
 
@@ -171,7 +171,10 @@ struct proc {
 | SWITCH_ON_END | 11 | 54.55% |
 | SWITCH_ON_IO | 7 | 85.71% |
 
-`SWITCH_ON_END` 的问题：进程阻塞时 CPU 空转；`SWITCH_ON_IO` 则立刻切换到其它可运行进程。
+从策略含义理解：
+
+- `SWITCH_ON_IO` 下，PID 0 一发 I/O 就进入 `BLOCKED`，操作系统立刻调度 PID 1，CPU 在 I/O 等待期间继续工作。
+- `SWITCH_ON_END` 下，PID 0 发 I/O 后操作系统不会切走，CPU 只能空等 PID 0 的 I/O 完成，再做 `io_done`，最后才轮到 PID 1。
 
 #### 实验 3：I/O 完成后的行为
 
@@ -182,7 +185,10 @@ struct proc {
 | IO_RUN_LATER | 31 | 67.74% | 48.39% |
 | IO_RUN_IMMEDIATE | 21 | 100.00% | 71.43% |
 
-`IO_RUN_IMMEDIATE` 更好，因为 I/O 完成后立即运行原进程，能尽快发出下一次 I/O，保持 I/O 设备持续忙碌；同时 CPU 也没有空转。
+从策略含义理解：
+
+- `IO_RUN_LATER` 下，PID 0 的 I/O 完成后只是回到 `READY`，不会抢回 CPU。此时 CPU 正忙着运行 PID 1/2/3，所以 PID 0 只能等它们全部结束后才执行 `io_done`，导致 I/O 设备在最后长时间空闲。
+- `IO_RUN_IMMEDIATE` 下，PID 0 的 I/O 一完成就立即被调度，抢占当前运行的进程，执行 `io_done` 并立刻发出下一次 I/O。这样 I/O 设备几乎不停，CPU 也能被其它进程填满，总时间更短。
 
 #### 实验 4：随机进程
 
