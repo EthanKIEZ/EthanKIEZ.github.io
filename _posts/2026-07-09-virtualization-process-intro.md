@@ -97,7 +97,7 @@ CPU 调度用的是时分共享；内存、磁盘用的是空分共享。
 - `-c`：直接给出答案（运行模拟）
 - `-p`：打印统计信息
 
-> 注意：`io` 指令本身占 1 tick，I/O 等待占 `-L` tick，`io_done` 占 1 tick。
+> **注意**：`io` 指令本身只占 **1 个 CPU tick**（用于向操作系统发起 I/O 请求），随后进程会阻塞 `-L` 个 tick（即 I/O 设备实际工作的时间，默认 5），I/O 完成时再用 **1 个 CPU tick** 执行 `io_done`。所以一次完整的 I/O 总耗时 = `1 + -L + 1`。
 
 ### 2.2 关键实验与发现
 
@@ -201,10 +201,7 @@ Time        PID: 0           CPU           IOs
   5        BLOCKED                           1
   6*   RUN:io_done             1
 
-Stats: Total Time 6
-Stats: CPU Busy 2 (33.33%)
-Stats: IO Busy  4 (66.67%)
-```
+> 这里的 `RUN:io` 和 `RUN:io_done` 各占 1 CPU tick，中间 4 个 `BLOCKED` tick 才是 I/O 设备实际工作的 4 个时钟周期。
 
 **四次 I/O，每次等待 1：**
 
@@ -230,8 +227,8 @@ Stats: IO Busy  4 (33.33%)
 
 区别：
 
-1. **总时间不同**：一次 IO4 只需 1 次 `io` + 1 次 `io_done` 开销，共 2 CPU tick + 4 IO wait = 6；四次 IO1 有 4 次 `io` + 4 次 `io_done` 开销，共 8 CPU tick + 4 IO wait = 12。
-2. **CPU 利用率不同**：拆成 4 次后 CPU 看起来更“忙”，但完成同样 IO 量的总效率更低。
+1. **总时间不同**：一次 IO4（`-L 4`，即 I/O 设备实际工作 4 tick）只需 1 次 `io` + 1 次 `io_done` 的 CPU 开销，共 **2 CPU tick + 4 IO wait = 6**；四次 IO1（每次 `-L 1`）虽然 I/O 设备总工作时间也是 4 tick，但有 4 次 `io` + 4 次 `io_done` 的 CPU 开销，共 **8 CPU tick + 4 IO wait = 12**。
+2. **CPU 利用率表象不同**：拆成 4 次后 CPU 看起来“更忙”，但完成同样 I/O 量的总效率更低。
 3. **调度机会不同**：4×IO1 让进程多次在 RUNNING/BLOCKED 之间切换，给 OS 更多机会调度别的进程；一次 IO4 则让进程长时间阻塞，期间 CPU 必须找别的事做，否则空转。
 
 实际系统中也类似：一次大 I/O 通常比多次小 I/O 更高效，因为每次 I/O 都有系统调用、设备初始化、DMA 设置等固定开销；但多次小 I/O 能提高进程的可调度性和响应性。所以真实系统里常有 I/O 合并（I/O merging）或块大小权衡：合并减少开销，拆分提高响应性。
