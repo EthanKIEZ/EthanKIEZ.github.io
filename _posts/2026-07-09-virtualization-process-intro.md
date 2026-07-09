@@ -21,7 +21,8 @@ toc_sticky: true
 # 虚拟化：进程入门
 
 > **适合人群**：正在学习操作系统、尤其是 OSTEP（Operating Systems: Three Easy Pieces）第四章的读者。
-> 
+{: .notice--info}
+
 > **配套工具**：本文所有模拟实验均使用 OSTEP 官方提供的 `process-run.py` 完成。
 {: .notice--info}
 
@@ -29,11 +30,17 @@ toc_sticky: true
 
 ### 1.1 进程就是运行中的程序
 
+> **知识点**：程序是静态的二进制文件，进程是运行中的程序及其状态的集合。
+{: .notice--primary}
+
 程序本身只是磁盘上的二进制文件，是“死”的。操作系统把程序加载到内存、分配资源、让它跑起来之后，才成为一个**进程（process）**。所以：
 
 > 进程 = 运行中的程序 + 它的状态 + 占用的资源
 
 ### 1.2 时分共享（Time Sharing）与空分共享（Space Sharing）
+
+> **知识点**：操作系统通过时分共享轮流使用 CPU，通过空分共享划分内存/磁盘空间。
+{: .notice--primary}
 
 操作系统要同时服务多个进程，本质上用了两种共享技术：
 
@@ -44,6 +51,9 @@ CPU 调度用的是时分共享；内存、磁盘用的是空分共享。
 
 ### 1.3 进程的机器状态
 
+> **知识点**：进程的机器状态包括 PC、寄存器和地址空间，这些信息保存在 PCB 中。
+{: .notice--primary}
+
 进程运行时，操作系统需要保存它的“现场”，主要包括：
 
 - **程序计数器 PC**：下一条要执行的指令地址
@@ -53,6 +63,9 @@ CPU 调度用的是时分共享；内存、磁盘用的是空分共享。
 这些信息存放在 **进程控制块 PCB（Process Control Block）** 里。切换进程时，OS 保存旧进程的 PCB，加载新进程的 PCB，这就是上下文切换。
 
 ### 1.4 进程状态
+
+> **知识点**：进程在 RUNNING、READY、BLOCKED 等状态之间转换，状态变化由调度、I/O 等事件触发。
+{: .notice--primary}
 
 一个进程在生命周期中会在几个状态之间转换：
 
@@ -69,6 +82,9 @@ CPU 调度用的是时分共享；内存、磁盘用的是空分共享。
 
 ### 1.5 从程序到进程：加载
 
+> **知识点**：操作系统通过加载程序、分配地址空间、初始化栈/堆，把静态程序变成动态进程。
+{: .notice--primary}
+
 操作系统加载程序时大致做：
 
 1. 从磁盘读取可执行文件
@@ -79,6 +95,9 @@ CPU 调度用的是时分共享；内存、磁盘用的是空分共享。
 这时，一个静态的程序就变成了动态的进程。
 
 ### 1.6 数据结构：进程列表与 PCB
+
+> **知识点**：操作系统用进程列表和 PCB 跟踪每个进程；xv6 的 `struct proc` 是一个典型实现。
+{: .notice--primary}
 
 操作系统本身也是程序，它需要用数据结构来跟踪系统中的所有进程。
 
@@ -153,150 +172,7 @@ struct proc {
 > **注意**：`io` 指令本身只占 **1 个 CPU tick**（用于向操作系统发起 I/O 请求），随后进程会阻塞 `-L` 个 tick（即 I/O 设备实际工作的时间，默认 5），I/O 完成时再用 **1 个 CPU tick** 执行 `io_done`。所以一次完整的 I/O 总耗时 = `1 + -L + 1`。
 {: .notice--warning}
 
-### 2.2 关键实验与发现
-
-#### 实验 1：进程顺序决定总时间
-
-- `-l 4:100,1:0`：CPU 先跑完，再发起 I/O
-  - 总时间 11，CPU 利用率 54.55%
-- `-l 1:0,4:100`：I/O 先发起，CPU 在 I/O 等待期间运行
-  - 总时间 7，CPU 利用率 85.71%
-
-结论：**把 I/O 密集型进程放在前面，可以让 CPU 与 I/O 重叠，显著缩短总时间。**
-
-#### 实验 2：切换策略 SWITCH_ON_END vs SWITCH_ON_IO
-
-| 策略 | 总时间 | CPU 利用率 |
-|---|---|---|
-| SWITCH_ON_END | 11 | 54.55% |
-| SWITCH_ON_IO | 7 | 85.71% |
-
-从策略含义理解：
-
-- `SWITCH_ON_IO` 下，PID 0 一发 I/O 就进入 `BLOCKED`，操作系统立刻调度 PID 1，CPU 在 I/O 等待期间继续工作。
-- `SWITCH_ON_END` 下，PID 0 发 I/O 后操作系统不会切走，CPU 只能空等 PID 0 的 I/O 完成，再做 `io_done`，最后才轮到 PID 1。
-
-#### 实验 3：I/O 完成后的行为
-
-用 `-l 3:0,5:100,5:100,5:100 -S SWITCH_ON_IO` 测试：
-
-| I/O 完成策略 | 总时间 | CPU 利用率 | I/O 利用率 |
-|---|---|---|---|
-| IO_RUN_LATER | 31 | 67.74% | 48.39% |
-| IO_RUN_IMMEDIATE | 21 | 100.00% | 71.43% |
-
-从策略含义理解：
-
-- `IO_RUN_LATER` 下，PID 0 的 I/O 完成后只是回到 `READY`，不会抢回 CPU。此时 CPU 正忙着运行 PID 1/2/3，所以 PID 0 只能等它们全部结束后才执行 `io_done`，导致 I/O 设备在最后长时间空闲。
-- `IO_RUN_IMMEDIATE` 下，PID 0 的 I/O 一完成就立即被调度，抢占当前运行的进程，执行 `io_done` 并立刻发出下一次 I/O。这样 I/O 设备几乎不停，CPU 也能被其它进程填满，总时间更短。
-
-#### 实验 4：随机进程
-
-对 `-s N -l 3:50,3:50` 测试不同种子和策略，结果如下：
-
-| seed | 策略 | 总时间 | CPU 利用率 | I/O 利用率 |
-|---|---|---|---|---|
-| 1 | SWITCH_ON_IO + LATER | 15 | 53.33% | 66.67% |
-| 1 | SWITCH_ON_IO + IMMEDIATE | 15 | 53.33% | 66.67% |
-| 1 | SWITCH_ON_END + LATER | 18 | 44.44% | 55.56% |
-| 2 | SWITCH_ON_IO + LATER | 16 | 62.50% | 87.50% |
-| 2 | SWITCH_ON_IO + IMMEDIATE | 16 | 62.50% | 87.50% |
-| 2 | SWITCH_ON_END + LATER | 30 | 33.33% | 66.67% |
-| 3 | SWITCH_ON_IO + LATER | 18 | 50.00% | 61.11% |
-| 3 | SWITCH_ON_IO + IMMEDIATE | 17 | 52.94% | 64.71% |
-| 3 | SWITCH_ON_END + LATER | 24 | 37.50% | 62.50% |
-
-规律：
-
-- `SWITCH_ON_IO` 普遍优于 `SWITCH_ON_END`，避免 CPU 空等。
-- `IO_RUN_IMMEDIATE` 在存在多次 I/O 时通常能进一步缩短时间。
-- 当 I/O 很少或只发生一次时，两种 I/O 策略差别不明显。
-
-### 2.3 简化的上下文切换图景
-
-把这些实验串起来，可以画出操作系统调度的核心逻辑：
-
-1. CPU 上运行的进程发起 I/O。
-2. 如果策略是 `SWITCH_ON_IO`，OS 保存该进程的 PCB，把它设为 BLOCKED，然后选择另一个 READY 进程运行。
-3. I/O 设备在后台工作，CPU 同时执行别的进程。
-4. I/O 完成后，进程变为 READY。
-5. 根据 `IO_RUN_IMMEDIATE` 或 `IO_RUN_LATER`，OS 决定是立刻恢复它，还是让它排队等待调度。
-
-这就是现代操作系统里 **CPU 虚拟化** 的最基本形式：通过时分共享，让多个进程“同时”推进，并通过合理调度隐藏 I/O 延迟。
-
-### 2.4 “CPU4” 与 “4×CPU1”、“IO4” 与 “4×IO1” 的区别
-
-讨论调度时，很容易把“连续执行 4 个 CPU tick”和“分成 4 条 CPU 指令”混为一谈。在 `process-run.py` 里，二者对 CPU 来说基本一样；但对 I/O 来说差别很大。
-
-#### CPU：在模拟器中没有区别
-
-`process-run.py` 里 `-P c4` 表示连续计算 4 个 tick，内部会被展开成 4 条 `DO_COMPUTE`；`-P c1,c1,c1,c1` 也是 4 条 `DO_COMPUTE`。输出都是：
-
-```text
-Time        PID: 0           CPU           IOs
-  1        RUN:cpu             1
-  2        RUN:cpu             1
-  3        RUN:cpu             1
-  4        RUN:cpu             1
-
-Stats: Total Time 4
-Stats: CPU Busy 4 (100.00%)
-Stats: IO Busy  0 (0.00%)
-```
-
-因为模拟器把每条 CPU 指令都当作 1 tick，拆不拆分不影响调度机会。在实际 CPU 上，如果 4 个 tick 只是 4 条普通指令，本质上也一样：操作系统通过时钟中断在指令边界附近抢占，除非是一条需要多个周期才能完成的复杂指令，否则“CPU4”和“4×CPU1”对调度没有实质区别。
-
-#### I/O：在模拟器和实际系统中都有区别
-
-用 `-P i -L 4`（一次 I/O，等待 4 tick）和 `-P i,i,i,i -L 1`（四次 I/O，每次等待 1 tick）对比：
-
-**一次 I/O 等待 4：**
-
-```text
-Time        PID: 0           CPU           IOs
-  1         RUN:io             1
-  2        BLOCKED                           1
-  3        BLOCKED                           1
-  4        BLOCKED                           1
-  5        BLOCKED                           1
-  6*   RUN:io_done             1
-
-> 这里的 `RUN:io` 和 `RUN:io_done` 各占 1 CPU tick，中间 4 个 `BLOCKED` tick 才是 I/O 设备实际工作的 4 个时钟周期。
-{: .notice--info}
-
-**四次 I/O，每次等待 1：**
-
-```text
-Time        PID: 0           CPU           IOs
-  1         RUN:io             1
-  2        BLOCKED                           1
-  3*   RUN:io_done             1
-  4         RUN:io             1
-  5        BLOCKED                           1
-  6*   RUN:io_done             1
-  7         RUN:io             1
-  8        BLOCKED                           1
-  9*   RUN:io_done             1
- 10         RUN:io             1
- 11        BLOCKED                           1
- 12*   RUN:io_done             1
-
-Stats: Total Time 12
-Stats: CPU Busy 8 (66.67%)
-Stats: IO Busy  4 (33.33%)
-```
-
-区别：
-
-1. **总时间不同**：一次 IO4（`-L 4`，即 I/O 设备实际工作 4 tick）只需 1 次 `io` + 1 次 `io_done` 的 CPU 开销，共 **2 CPU tick + 4 IO wait = 6**；四次 IO1（每次 `-L 1`）虽然 I/O 设备总工作时间也是 4 tick，但有 4 次 `io` + 4 次 `io_done` 的 CPU 开销，共 **8 CPU tick + 4 IO wait = 12**。
-2. **CPU 利用率表象不同**：拆成 4 次后 CPU 看起来“更忙”，但完成同样 I/O 量的总效率更低。
-3. **调度机会不同**：4×IO1 让进程多次在 RUNNING/BLOCKED 之间切换，给 OS 更多机会调度别的进程；一次 IO4 则让进程长时间阻塞，期间 CPU 必须找别的事做，否则空转。
-
-实际系统中也类似：一次大 I/O 通常比多次小 I/O 更高效，因为每次 I/O 都有系统调用、设备初始化、DMA 设置等固定开销；但多次小 I/O 能提高进程的可调度性和响应性。所以真实系统里常有 I/O 合并（I/O merging）或块大小权衡：合并减少开销，拆分提高响应性。
-
----
-
-## 附录：process-run.py 完整代码
+### 2.2 process-run.py 完整代码
 
 ```python
 #! /usr/bin/env python
@@ -654,6 +530,8 @@ if options.print_stats:
     print('Stats: CPU Busy %d (%.2f%%)' % (cpu_busy, 100.0 * float(cpu_busy) / clock_tick))
     print('Stats: IO Busy  %d (%.2f%%)' % (io_busy, 100.0 * float(io_busy) / clock_tick))
     print('')
+```
+
 > **原文出处**：
 > - 模拟器代码：[remzi-arpacidusseau/ostep-homework/cpu-intro/process-run.py](https://github.com/remzi-arpacidusseau/ostep-homework/blob/master/cpu-intro/process-run.py)
 > - 配套教材页面：[Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/)
@@ -661,3 +539,153 @@ if options.print_stats:
 
 > **阅读建议**：对照代码重点关注 `run()` 方法里的主循环，以及 `next_proc()`、`move_to_wait()`、`move_to_ready()` 这几个函数，它们共同实现了简化的上下文切换逻辑。
 {: .notice--tip}
+
+### 2.3 关键实验与发现
+
+#### 实验 1：进程顺序决定总时间
+
+- `-l 4:100,1:0`：CPU 先跑完，再发起 I/O
+  - 总时间 11，CPU 利用率 54.55%
+- `-l 1:0,4:100`：I/O 先发起，CPU 在 I/O 等待期间运行
+  - 总时间 7，CPU 利用率 85.71%
+
+> **结论**：把 I/O 密集型进程放在前面，可以让 CPU 与 I/O 重叠，显著缩短总时间。
+{: .notice--success}
+
+#### 实验 2：切换策略 SWITCH_ON_END vs SWITCH_ON_IO
+
+| 策略 | 总时间 | CPU 利用率 |
+|---|---|---|
+| SWITCH_ON_END | 11 | 54.55% |
+| SWITCH_ON_IO | 7 | 85.71% |
+
+从策略含义理解：
+
+- `SWITCH_ON_IO` 下，PID 0 一发 I/O 就进入 `BLOCKED`，操作系统立刻调度 PID 1，CPU 在 I/O 等待期间继续工作。
+- `SWITCH_ON_END` 下，PID 0 发 I/O 后操作系统不会切走，CPU 只能空等 PID 0 的 I/O 完成，再做 `io_done`，最后才轮到 PID 1。
+
+> **结论**：`SWITCH_ON_IO` 允许 CPU 与 I/O 重叠；`SWITCH_ON_END` 则让 CPU 在 I/O 等待期间空转。
+{: .notice--success}
+
+#### 实验 3：I/O 完成后的行为
+
+用 `-l 3:0,5:100,5:100,5:100 -S SWITCH_ON_IO` 测试：
+
+| I/O 完成策略 | 总时间 | CPU 利用率 | I/O 利用率 |
+|---|---|---|---|
+| IO_RUN_LATER | 31 | 67.74% | 48.39% |
+| IO_RUN_IMMEDIATE | 21 | 100.00% | 71.43% |
+
+从策略含义理解：
+
+- `IO_RUN_LATER` 下，PID 0 的 I/O 完成后只是回到 `READY`，不会抢回 CPU。此时 CPU 正忙着运行 PID 1/2/3，所以 PID 0 只能等它们全部结束后才执行 `io_done`，导致 I/O 设备在最后长时间空闲。
+- `IO_RUN_IMMEDIATE` 下，PID 0 的 I/O 一完成就立即被调度，抢占当前运行的进程，执行 `io_done` 并立刻发出下一次 I/O。这样 I/O 设备几乎不停，CPU 也能被其它进程填满，总时间更短。
+
+> **结论**：`IO_RUN_IMMEDIATE` 能让 I/O 设备保持忙碌；`IO_RUN_LATER` 在存在多个 CPU 进程时容易造成 I/O 空闲。
+{: .notice--success}
+
+#### 实验 4：随机进程
+
+对 `-s N -l 3:50,3:50` 测试不同种子和策略，结果如下：
+
+| seed | 策略 | 总时间 | CPU 利用率 | I/O 利用率 |
+|---|---|---|---|---|
+| 1 | SWITCH_ON_IO + LATER | 15 | 53.33% | 66.67% |
+| 1 | SWITCH_ON_IO + IMMEDIATE | 15 | 53.33% | 66.67% |
+| 1 | SWITCH_ON_END + LATER | 18 | 44.44% | 55.56% |
+| 2 | SWITCH_ON_IO + LATER | 16 | 62.50% | 87.50% |
+| 2 | SWITCH_ON_IO + IMMEDIATE | 16 | 62.50% | 87.50% |
+| 2 | SWITCH_ON_END + LATER | 30 | 33.33% | 66.67% |
+| 3 | SWITCH_ON_IO + LATER | 18 | 50.00% | 61.11% |
+| 3 | SWITCH_ON_IO + IMMEDIATE | 17 | 52.94% | 64.71% |
+| 3 | SWITCH_ON_END + LATER | 24 | 37.50% | 62.50% |
+
+规律：
+
+- `SWITCH_ON_IO` 普遍优于 `SWITCH_ON_END`，避免 CPU 空等。
+- `IO_RUN_IMMEDIATE` 在存在多次 I/O 时通常能进一步缩短时间。
+- 当 I/O 很少或只发生一次时，两种 I/O 策略差别不明显。
+
+### 2.4 简化的上下文切换图景
+
+把这些实验串起来，可以画出操作系统调度的核心逻辑：
+
+1. CPU 上运行的进程发起 I/O。
+2. 如果策略是 `SWITCH_ON_IO`，OS 保存该进程的 PCB，把它设为 BLOCKED，然后选择另一个 READY 进程运行。
+3. I/O 设备在后台工作，CPU 同时执行别的进程。
+4. I/O 完成后，进程变为 READY。
+5. 根据 `IO_RUN_IMMEDIATE` 或 `IO_RUN_LATER`，OS 决定是立刻恢复它，还是让它排队等待调度。
+
+这就是现代操作系统里 **CPU 虚拟化** 的最基本形式：通过时分共享，让多个进程“同时”推进，并通过合理调度隐藏 I/O 延迟。
+
+### 2.5 “CPU4” 与 “4×CPU1”、“IO4” 与 “4×IO1” 的区别
+
+讨论调度时，很容易把“连续执行 4 个 CPU tick”和“分成 4 条 CPU 指令”混为一谈。在 `process-run.py` 里，二者对 CPU 来说基本一样；但对 I/O 来说差别很大。
+
+#### CPU：在模拟器中没有区别
+
+`process-run.py` 里 `-P c4` 表示连续计算 4 个 tick，内部会被展开成 4 条 `DO_COMPUTE`；`-P c1,c1,c1,c1` 也是 4 条 `DO_COMPUTE`。输出都是：
+
+```text
+Time        PID: 0           CPU           IOs
+  1        RUN:cpu             1
+  2        RUN:cpu             1
+  3        RUN:cpu             1
+  4        RUN:cpu             1
+
+Stats: Total Time 4
+Stats: CPU Busy 4 (100.00%)
+Stats: IO Busy  0 (0.00%)
+```
+
+因为模拟器把每条 CPU 指令都当作 1 tick，拆不拆分不影响调度机会。在实际 CPU 上，如果 4 个 tick 只是 4 条普通指令，本质上也一样：操作系统通过时钟中断在指令边界附近抢占，除非是一条需要多个周期才能完成的复杂指令，否则“CPU4”和“4×CPU1”对调度没有实质区别。
+
+#### I/O：在模拟器和实际系统中都有区别
+
+用 `-P i -L 4`（一次 I/O，等待 4 tick）和 `-P i,i,i,i -L 1`（四次 I/O，每次等待 1 tick）对比：
+
+**一次 I/O 等待 4：**
+
+```text
+Time        PID: 0           CPU           IOs
+  1         RUN:io             1
+  2        BLOCKED                           1
+  3        BLOCKED                           1
+  4        BLOCKED                           1
+  5        BLOCKED                           1
+  6*   RUN:io_done             1
+
+> 这里的 `RUN:io` 和 `RUN:io_done` 各占 1 CPU tick，中间 4 个 `BLOCKED` tick 才是 I/O 设备实际工作的 4 个时钟周期。
+{: .notice--info}
+
+**四次 I/O，每次等待 1：**
+
+```text
+Time        PID: 0           CPU           IOs
+  1         RUN:io             1
+  2        BLOCKED                           1
+  3*   RUN:io_done             1
+  4         RUN:io             1
+  5        BLOCKED                           1
+  6*   RUN:io_done             1
+  7         RUN:io             1
+  8        BLOCKED                           1
+  9*   RUN:io_done             1
+ 10         RUN:io             1
+ 11        BLOCKED                           1
+ 12*   RUN:io_done             1
+
+Stats: Total Time 12
+Stats: CPU Busy 8 (66.67%)
+Stats: IO Busy  4 (33.33%)
+```
+
+区别：
+
+1. **总时间不同**：一次 IO4（`-L 4`，即 I/O 设备实际工作 4 tick）只需 1 次 `io` + 1 次 `io_done` 的 CPU 开销，共 **2 CPU tick + 4 IO wait = 6**；四次 IO1（每次 `-L 1`）虽然 I/O 设备总工作时间也是 4 tick，但有 4 次 `io` + 4 次 `io_done` 的 CPU 开销，共 **8 CPU tick + 4 IO wait = 12**。
+2. **CPU 利用率表象不同**：拆成 4 次后 CPU 看起来“更忙”，但完成同样 I/O 量的总效率更低。
+3. **调度机会不同**：4×IO1 让进程多次在 RUNNING/BLOCKED 之间切换，给 OS 更多机会调度别的进程；一次 IO4 则让进程长时间阻塞，期间 CPU 必须找别的事做，否则空转。
+
+实际系统中也类似：一次大 I/O 通常比多次小 I/O 更高效，因为每次 I/O 都有系统调用、设备初始化、DMA 设置等固定开销；但多次小 I/O 能提高进程的可调度性和响应性。所以真实系统里常有 I/O 合并（I/O merging）或块大小权衡：合并减少开销，拆分提高响应性。
+
+-
