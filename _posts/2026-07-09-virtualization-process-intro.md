@@ -80,6 +80,17 @@ CPU 调度用的是时分共享；内存、磁盘用的是空分共享。
 - 发起 I/O → BLOCKED
 - I/O 完成 → READY
 
+可以用下面的状态图直观表示：
+
+<div class="mermaid">
+flowchart LR
+    READY -->|被调度器选中| RUNNING
+    RUNNING -->|时间片用完/被抢占| READY
+    RUNNING -->|发起 I/O| BLOCKED
+    BLOCKED -->|I/O 完成| READY
+    RUNNING -->|执行完毕| DONE
+</div>
+
 ### 1.5 从程序到进程：加载
 
 > **知识点**：操作系统通过加载程序、分配地址空间、初始化栈/堆，把静态程序变成动态进程。
@@ -618,6 +629,21 @@ if options.print_stats:
 
 这就是现代操作系统里 **CPU 虚拟化** 的最基本形式：通过时分共享，让多个进程“同时”推进，并通过合理调度隐藏 I/O 延迟。
 
+下面用甘特图展示 `-l 1:0,4:100 -S SWITCH_ON_IO` 的调度过程：
+
+<div class="mermaid">
+gantt
+    title SWITCH_ON_IO：-l 1:0,4:100
+    dateFormat X
+    axisFormat %s
+    section CPU
+    PID0 发起 I/O         :crit, p0_io, 1, 2
+    PID1 执行 CPU 指令     :p1_cpu, 2, 6
+    PID0 处理 I/O 完成     :crit, p0_done, 7, 8
+    section I/O
+    I/O 设备工作           :io, 2, 7
+</div>
+
 ### 2.5 “CPU4” 与 “4×CPU1”、“IO4” 与 “4×IO1” 的区别
 
 讨论调度时，很容易把“连续执行 4 个 CPU tick”和“分成 4 条 CPU 指令”混为一谈。在 `process-run.py` 里，二者对 CPU 来说基本一样；但对 I/O 来说差别很大。
@@ -688,4 +714,5 @@ Stats: IO Busy  4 (33.33%)
 
 实际系统中也类似：一次大 I/O 通常比多次小 I/O 更高效，因为每次 I/O 都有系统调用、设备初始化、DMA 设置等固定开销；但多次小 I/O 能提高进程的可调度性和响应性。所以真实系统里常有 I/O 合并（I/O merging）或块大小权衡：合并减少开销，拆分提高响应性。
 
--
+<script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true});</script>
