@@ -209,7 +209,11 @@ struct proc {
 
 ### 2.2 process-run.py 完整代码
 
-```python
+<details>
+<summary>点击展开 / 收起 <code>process-run.py</code> 完整代码</summary>
+
+{% highlight python %}
+{% raw %}
 #! /usr/bin/env python
 
 from __future__ import print_function
@@ -565,7 +569,10 @@ if options.print_stats:
     print('Stats: CPU Busy %d (%.2f%%)' % (cpu_busy, 100.0 * float(cpu_busy) / clock_tick))
     print('Stats: IO Busy  %d (%.2f%%)' % (io_busy, 100.0 * float(io_busy) / clock_tick))
     print('')
-```
+{% endraw %}
+{% endhighlight %}
+
+</details>
 
 > **原文出处**：
 > - 模拟器代码：[remzi-arpacidusseau/ostep-homework/cpu-intro/process-run.py](https://github.com/remzi-arpacidusseau/ostep-homework/blob/master/cpu-intro/process-run.py)
