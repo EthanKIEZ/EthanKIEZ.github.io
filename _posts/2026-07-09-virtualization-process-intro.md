@@ -82,16 +82,38 @@ CPU 调度用的是时分共享；内存、磁盘用的是空分共享。
 
 可以用下面的状态图直观表示：
 
-{% raw %}
-<div class="mermaid">
-flowchart LR
-    READY -->|被调度器选中| RUNNING
-    RUNNING -->|时间片用完/被抢占| READY
-    RUNNING -->|发起 I/O| BLOCKED
-    BLOCKED -->|I/O 完成| READY
-    RUNNING -->|执行完毕| DONE
-</div>
-{% endraw %}
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300" viewBox="0 0 600 300" style="max-width:100%;height:auto;background:#fafafa;border:1px solid #e0e0e0;border-radius:6px;">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#555" />
+    </marker>
+  </defs>
+  <style>
+    .node { fill:#e3f2fd; stroke:#1976d2; stroke-width:2; rx:6; }
+    .done { fill:#e8f5e9; stroke:#388e3c; stroke-width:2; rx:6; }
+    .text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size:14px; text-anchor:middle; dominant-baseline:middle; }
+    .label { font-size:12px; fill:#333; text-anchor:middle; }
+    .arrow { stroke:#555; stroke-width:2; fill:none; marker-end:url(#arrow); }
+  </style>
+  <rect x="60" y="120" width="90" height="50" class="node"/>
+  <text x="105" y="145" class="text">READY</text>
+  <rect x="280" y="120" width="100" height="50" class="node"/>
+  <text x="330" y="145" class="text">RUNNING</text>
+  <rect x="280" y="210" width="100" height="50" class="node"/>
+  <text x="330" y="235" class="text">BLOCKED</text>
+  <rect x="490" y="120" width="80" height="50" class="done"/>
+  <text x="530" y="145" class="text">DONE</text>
+  <line x1="150" y1="145" x2="280" y2="145" class="arrow"/>
+  <text x="215" y="135" class="label">被调度器选中</text>
+  <path d="M 330 120 Q 330 70 215 70 Q 100 70 105 120" class="arrow"/>
+  <text x="215" y="60" class="label">时间片用完 / 被抢占</text>
+  <line x1="330" y1="170" x2="330" y2="210" class="arrow"/>
+  <text x="360" y="190" class="label">发起 I/O</text>
+  <path d="M 280 235 Q 180 235 150 170" class="arrow"/>
+  <text x="200" y="225" class="label">I/O 完成</text>
+  <line x1="380" y1="145" x2="490" y2="145" class="arrow"/>
+  <text x="435" y="135" class="label">执行完毕</text>
+</svg>
 
 ### 1.5 从程序到进程：加载
 
@@ -638,20 +660,36 @@ if options.print_stats:
 
 下面用甘特图展示 `-l 1:0,4:100 -S SWITCH_ON_IO` 的调度过程：
 
-{% raw %}
-<div class="mermaid">
-gantt
-    title SWITCH_ON_IO：-l 1:0,4:100
-    dateFormat X
-    axisFormat %s
-    section CPU
-    PID0 发起 I/O         :crit, p0_io, 1, 2
-    PID1 执行 CPU 指令     :p1_cpu, 2, 6
-    PID0 处理 I/O 完成     :crit, p0_done, 7, 8
-    section I/O
-    I/O 设备工作           :io, 2, 7
-</div>
-{% endraw %}
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="220" viewBox="0 0 700 220" style="max-width:100%;height:auto;background:#fafafa;border:1px solid #e0e0e0;border-radius:6px;">
+  <style>
+    .axis { stroke:#999; stroke-width:1; }
+    .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size:13px; text-anchor:middle; dominant-baseline:middle; }
+    .row-label { font-size:14px; font-weight:bold; text-anchor:end; dominant-baseline:middle; }
+    .cpu { fill:#bbdefb; stroke:#1976d2; stroke-width:1; rx:3; }
+    .io { fill:#c8e6c9; stroke:#388e3c; stroke-width:1; rx:3; }
+    .title { font-size:15px; font-weight:bold; text-anchor:start; }
+  </style>
+  <text x="20" y="25" class="title">SWITCH_ON_IO：-l 1:0,4:100</text>
+  <text x="90" y="85" class="row-label">CPU</text>
+  <text x="90" y="145" class="row-label">I/O</text>
+  <line x1="100" y1="170" x2="650" y2="170" class="axis"/>
+  <text x="100" y="190" class="label">1</text>
+  <text x="175" y="190" class="label">2</text>
+  <text x="250" y="190" class="label">3</text>
+  <text x="325" y="190" class="label">4</text>
+  <text x="400" y="190" class="label">5</text>
+  <text x="475" y="190" class="label">6</text>
+  <text x="550" y="190" class="label">7</text>
+  <text x="625" y="190" class="label">8</text>
+  <rect x="100" y="65" width="75" height="36" class="cpu"/>
+  <text x="137" y="83" class="label">PID0 发 I/O</text>
+  <rect x="175" y="65" width="300" height="36" class="cpu"/>
+  <text x="325" y="83" class="label">PID1 执行 CPU</text>
+  <rect x="550" y="65" width="75" height="36" class="cpu"/>
+  <text x="587" y="83" class="label">io_done</text>
+  <rect x="175" y="125" width="375" height="36" class="io"/>
+  <text x="362" y="143" class="label">I/O 设备工作</text>
+</svg>
 
 ### 2.5 “CPU4” 与 “4×CPU1”、“IO4” 与 “4×IO1” 的区别
 
@@ -722,6 +760,3 @@ Stats: IO Busy  4 (33.33%)
 3. **调度机会不同**：4×IO1 让进程多次在 RUNNING/BLOCKED 之间切换，给 OS 更多机会调度别的进程；一次 IO4 则让进程长时间阻塞，期间 CPU 必须找别的事做，否则空转。
 
 实际系统中也类似：一次大 I/O 通常比多次小 I/O 更高效，因为每次 I/O 都有系统调用、设备初始化、DMA 设置等固定开销；但多次小 I/O 能提高进程的可调度性和响应性。所以真实系统里常有 I/O 合并（I/O merging）或块大小权衡：合并减少开销，拆分提高响应性。
-
-<script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({startOnLoad:true});</script>
