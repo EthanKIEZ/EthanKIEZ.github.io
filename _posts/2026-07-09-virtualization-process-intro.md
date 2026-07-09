@@ -209,7 +209,7 @@ struct proc {
 
 ### 2.2 process-run.py 完整代码
 
-<details>
+<details markdown="1">
 <summary>点击展开 / 收起 <code>process-run.py</code> 完整代码</summary>
 
 ```python
