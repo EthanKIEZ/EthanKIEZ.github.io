@@ -209,9 +209,6 @@ struct proc {
 
 ### 2.2 process-run.py 完整代码
 
-<details markdown="1">
-<summary>点击展开 / 收起 <code>process-run.py</code> 完整代码</summary>
-
 ```python
 #! /usr/bin/env python
 
@@ -570,8 +567,6 @@ if options.print_stats:
     print('')
 ```
 
-</details>
-
 > **原文出处**：
 > - 模拟器代码：[remzi-arpacidusseau/ostep-homework/cpu-intro/process-run.py](https://github.com/remzi-arpacidusseau/ostep-homework/blob/master/cpu-intro/process-run.py)
 > - 配套教材页面：[Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/)
@@ -727,6 +722,7 @@ Time        PID: 0           CPU           IOs
   4        BLOCKED                           1
   5        BLOCKED                           1
   6*   RUN:io_done             1
+```
 
 > 这里的 `RUN:io` 和 `RUN:io_done` 各占 1 CPU tick，中间 4 个 `BLOCKED` tick 才是 I/O 设备实际工作的 4 个时钟周期。
 {: .notice--info}
