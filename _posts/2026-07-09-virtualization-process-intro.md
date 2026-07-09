@@ -82,6 +82,7 @@ CPU 调度用的是时分共享；内存、磁盘用的是空分共享。
 
 可以用下面的状态图直观表示：
 
+{% raw %}
 <div class="mermaid">
 flowchart LR
     READY -->|被调度器选中| RUNNING
@@ -90,6 +91,7 @@ flowchart LR
     BLOCKED -->|I/O 完成| READY
     RUNNING -->|执行完毕| DONE
 </div>
+{% endraw %}
 
 ### 1.5 从程序到进程：加载
 
@@ -184,6 +186,9 @@ struct proc {
 {: .notice--warning}
 
 ### 2.2 process-run.py 完整代码
+
+<details>
+<summary>点击展开 / 收起 <code>process-run.py</code> 完整代码</summary>
 
 ```python
 #! /usr/bin/env python
@@ -543,6 +548,8 @@ if options.print_stats:
     print('')
 ```
 
+</details>
+
 > **原文出处**：
 > - 模拟器代码：[remzi-arpacidusseau/ostep-homework/cpu-intro/process-run.py](https://github.com/remzi-arpacidusseau/ostep-homework/blob/master/cpu-intro/process-run.py)
 > - 配套教材页面：[Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/)
@@ -631,6 +638,7 @@ if options.print_stats:
 
 下面用甘特图展示 `-l 1:0,4:100 -S SWITCH_ON_IO` 的调度过程：
 
+{% raw %}
 <div class="mermaid">
 gantt
     title SWITCH_ON_IO：-l 1:0,4:100
@@ -643,6 +651,7 @@ gantt
     section I/O
     I/O 设备工作           :io, 2, 7
 </div>
+{% endraw %}
 
 ### 2.5 “CPU4” 与 “4×CPU1”、“IO4” 与 “4×IO1” 的区别
 
