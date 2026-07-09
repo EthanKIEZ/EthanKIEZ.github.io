@@ -292,11 +292,6 @@ Stats: IO Busy  4 (33.33%)
 
 ## 附录：process-run.py 完整代码
 
-下面是 OSTEP 第四章官方模拟器 `process-run.py` 的完整代码。你可以把它复制到本地直接运行，也可以对照代码理解每一节实验背后的实现逻辑。
-
-<details>
-<summary>点击展开 <code>process-run.py</code> 完整代码</summary>
-
 ```python
 #! /usr/bin/env python
 
@@ -653,9 +648,10 @@ if options.print_stats:
     print('Stats: CPU Busy %d (%.2f%%)' % (cpu_busy, 100.0 * float(cpu_busy) / clock_tick))
     print('Stats: IO Busy  %d (%.2f%%)' % (io_busy, 100.0 * float(io_busy) / clock_tick))
     print('')
-```
-
-</details>
+> **原文出处**：
+> - 模拟器代码：[remzi-arpacidusseau/ostep-homework/cpu-intro/process-run.py](https://github.com/remzi-arpacidusseau/ostep-homework/blob/master/cpu-intro/process-run.py)
+> - 配套教材页面：[Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/)
+{: .notice--info}
 
 > **阅读建议**：对照代码重点关注 `run()` 方法里的主循环，以及 `next_proc()`、`move_to_wait()`、`move_to_ready()` 这几个函数，它们共同实现了简化的上下文切换逻辑。
 {: .notice--tip}
