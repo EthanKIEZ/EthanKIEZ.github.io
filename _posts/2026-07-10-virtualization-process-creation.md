@@ -154,15 +154,113 @@ pid_t waitpid(pid_t pid, int *status, int options);
 
 ### 2.4 退出状态解析
 
+`wait()` / `waitpid()` 得到的 `status` 是一个整数，里面编码了子进程的退出信息。不能直接打印它，需要用专门的宏来解析。
+
+#### 常用宏
+
+| 宏 | 作用 |
+|---|---|
+| `WIFEXITED(status)` | 子进程是否正常退出（调用 `exit()` 或从 `main` 返回） |
+| `WEXITSTATUS(status)` | 获取正常退出时的退出码（0 ~ 255） |
+| `WIFSIGNALED(status)` | 子进程是否被信号终止 |
+| `WTERMSIG(status)` | 获取导致终止的信号编号 |
+| `WIFSTOPPED(status)` | 子进程是否被信号暂停（需 `WUNTRACED`） |
+| `WSTOPSIG(status)` | 获取导致暂停的信号编号 |
+| `WIFCONTINUED(status)` | 子进程是否由暂停恢复（需 `WCONTINUED`） |
+
+#### 基本解析模板
+
 ```c
 int status;
 pid_t pid = wait(&status);
 
 if (WIFEXITED(status)) {
     printf("正常退出，退出码：%d\n", WEXITSTATUS(status));
-}
-if (WIFSIGNALED(status)) {
+} else if (WIFSIGNALED(status)) {
     printf("被信号 %d 终止\n", WTERMSIG(status));
+}
+```
+
+#### 两种常见情况
+
+**正常退出**
+
+```c
+if (pid == 0) {
+    exit(7);   // 子进程正常退出，退出码 7
+}
+
+wait(&status);
+
+if (WIFEXITED(status)) {
+    int code = WEXITSTATUS(status);   // code = 7
+    printf("退出码：%d\n", code);
+}
+```
+
+**被信号终止**
+
+```c
+if (pid == 0) {
+    while (1);   // 子进程死循环
+}
+
+kill(pid, SIGKILL);   // 父进程发送 SIGKILL
+wait(&status);
+
+if (WIFSIGNALED(status)) {
+    int sig = WTERMSIG(status);   // sig = 9
+    printf("被信号 %d 终止\n", sig);
+}
+```
+
+#### status 里到底存了什么
+
+`status` 的低 16 位大致这样组织：
+
+- 高 8 位：正常退出码
+- 低 7 位：终止信号编号
+- 第 8 位：core dump 标志
+
+具体位布局因系统而异，但这些宏屏蔽了差异，直接调用即可。
+
+#### 完整示例
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
+
+int main() {
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("fork");
+        exit(1);
+    }
+
+    if (pid == 0) {
+        printf("子进程 PID = %d\n", getpid());
+        sleep(2);
+        exit(3);   // 正常退出，退出码 3
+    }
+
+    int status;
+    pid_t ret = wait(&status);
+
+    printf("父进程等到子进程 %d\n", ret);
+
+    if (WIFEXITED(status)) {
+        printf("正常退出，码 = %d\n", WEXITSTATUS(status));
+    } else if (WIFSIGNALED(status)) {
+        printf("被信号终止，信号 = %d\n", WTERMSIG(status));
+    } else if (WIFSTOPPED(status)) {
+        printf("被信号暂停，信号 = %d\n", WSTOPSIG(status));
+    }
+
+    return 0;
 }
 ```
 
