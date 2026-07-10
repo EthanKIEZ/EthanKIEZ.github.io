@@ -13,3 +13,43 @@
   };
 </script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+  /* 可折叠目录：默认折叠，保持原主题样式 */
+  .toc--collapsible {
+    display: block;
+  }
+
+  .toc--collapsible summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* 隐藏 WebKit 默认的 disclosure 三角形 */
+  .toc--collapsible summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* 为标题左侧添加一个自定义折叠指示器 */
+  .toc--collapsible summary .nav__title {
+    position: relative;
+    padding-inline-start: 1.5rem;
+  }
+
+  .toc--collapsible summary .nav__title::before {
+    content: "▸";
+    position: absolute;
+    inset-inline-start: 0.5rem;
+    transition: transform 0.2s ease;
+  }
+
+  .toc--collapsible[open] summary .nav__title::before {
+    transform: rotate(90deg);
+  }
+
+  /* 保持菜单列表样式 */
+  .toc--collapsible .toc__menu {
+    margin: 0;
+  }
+</style>
