@@ -52,4 +52,39 @@
   .toc--collapsible .toc__menu {
     margin: 0;
   }
+
+  /* 可折叠拓展思考区域 */
+  .thinking-box {
+    margin: 1.5em 0;
+    padding: 0.75em 1em;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+  }
+
+  .thinking-box summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    color: #495057;
+  }
+
+  .thinking-box summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .thinking-box summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 0.5em;
+    transition: transform 0.2s ease;
+  }
+
+  .thinking-box[open] summary::before {
+    transform: rotate(90deg);
+  }
+
+  .thinking-box > *:last-child {
+    margin-bottom: 0;
+  }
 </style>
