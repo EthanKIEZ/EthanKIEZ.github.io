@@ -447,9 +447,129 @@ if (fork() == 0) {
 
 表示当前没有子进程结束，父进程不会被阻塞，可以继续做其他事情。
 
+**Q：重定向是怎么实现的？**
+
+重定向通过修改进程的文件描述符实现。例如 `ls > out.txt`，shell 会在子进程中 `close(1)` 再 `open("out.txt")`，让 fd 1 指向文件，然后 `exec()` 运行 `ls`。
+
+**Q：`kill()` 是做什么的？**
+
+`kill()` 不是只能杀死进程，它是向进程发送信号。常见信号：`SIGKILL` 强制终止、`SIGTERM` 请求终止、`SIGSTOP` 暂停、`SIGCONT` 继续。
+
 ---
 
-## 7. 总结
+## 7. 课后题实践
+
+下面是 OSTEP 第五章课后题 1~4 的代码实现与观察。
+
+### 7.1 第 1 题：fork 与变量复制
+
+文件：`01_fork_x.c`
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main() {
+    int x = 100;
+    printf("before fork: x = %d\n", x);
+
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("fork failed");
+        exit(1);
+    } else if (pid == 0) {
+        printf("child : x = %d\n", x);
+        x = 200;
+        printf("child after x = 200: x = %d\n", x);
+    } else {
+        printf("parent: x = %d\n", x);
+        x = 300;
+        printf("parent after x = 300: x = %d\n", x);
+    }
+
+    return 0;
+}
+```
+
+**观察**
+
+- 子进程继承父进程的 `x` 值（100）
+- 父子进程各自修改 `x` 互不影响
+- 说明 `fork()` 后父子有独立的地址空间副本
+
+---
+
+### 7.2 第 2 题：open 后 fork
+
+文件：`02_fork_file.c`
+
+```c
+int fd = open("fork_output.txt", O_WRONLY | O_CREAT | O_APPEND, 0644);
+fork();
+// 父子进程都向 fd 写入
+```
+
+**观察**
+
+- 子进程继承父进程打开的文件描述符
+- `O_APPEND` 保证每次写入追加到文件末尾
+- 父子进程共享同一个打开文件表项（包括文件偏移量）
+
+---
+
+### 7.3 第 3 题：确保子进程先打印
+
+文件：`03_fork_hello_goodbye.c`
+
+```c
+if (pid == 0) {
+    printf("hello\n");
+    exit(0);
+} else {
+    wait(NULL);
+    printf("goodbye\n");
+}
+```
+
+**观察**
+
+- 父进程调用 `wait(NULL)` 阻塞等待子进程结束
+- 因此 `hello` 一定在 `goodbye` 之前输出
+
+---
+
+### 7.4 第 4 题：exec 变体
+
+文件：`04_fork_exec_ls.c`
+
+```c
+void run_exec(const char *name, void (*exec_func)(void)) {
+    printf("\n=== %s ===\n", name);
+    fflush(stdout);
+    if (fork() == 0) {
+        exec_func();
+        perror("exec failed");
+        exit(1);
+    }
+    wait(NULL);
+}
+```
+
+程序演示了 `execl`、`execle`、`execlp`、`execv`、`execvp`、`execvP` 六种变体。
+
+**关键理解**
+
+| 字母 | 含义 |
+|---|---|
+| `l` / `v` | 参数用列表还是数组传递 |
+| `e` | 是否自定义环境变量 |
+| `p` | 是否通过 `PATH` 搜索可执行文件 |
+
+---
+
+## 8. 总结
 
 | 函数 | 作用 | 是否创建新进程 |
 |---|---|---|
