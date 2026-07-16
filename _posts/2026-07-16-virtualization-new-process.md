@@ -171,6 +171,58 @@ if (WIFEXITED(status)) {
 
 `PATH` 是用 `:` 分隔的目录列表，shell 和 `execvp()` 按顺序在这些目录里找可执行文件。当前目录通常不在 `PATH` 里，所以要执行当前目录下的程序需要加 `./`。
 
+### `/bin`、`/sbin`、`/usr/bin` 等目录的区别
+
+Unix/Linux 把可执行文件按用途分散到不同目录里，常见分工如下：
+
+| 目录 | 用途 | 例子 |
+|------|------|------|
+| `/bin` | 系统启动和单用户模式下也需要的**基本用户命令**，所有用户都能用 | `ls`、`cat`、`cp`、`mv` |
+| `/sbin` | **系统管理命令**，通常需要 root 权限 | `fsck`、`reboot`、`ifconfig` |
+| `/usr/bin` | 系统正常运行后提供的**普通用户命令**，数量最多 | `gcc`、`vim`、`python3` |
+| `/usr/sbin` | 系统正常运⾏后的**管理命令** | `sshd`、`cron` |
+| `/usr/local/bin` | 用户或管理员自己安装的软件，不会被系统包管理器覆盖 | 自己编译的 `nginx`、`node` |
+| `/opt/.../bin` | 第三方独立安装包的可执行目录 | macOS Homebrew 的 `/opt/homebrew/bin` |
+
+macOS 里 `PATH` 通常会比 Linux 更长，因为它会加入 Homebrew、JetBrains Toolbox、系统安全 Cryptex 等路径。这些额外目录让不同来源的命令都能被找到。
+
+#### `PATH` 的匹配规则
+
+- `PATH` 可以有**多个目录**，用 `:` 分隔。
+- shell 或 `execvp()` 按**从左到右**的顺序查找。
+- 如果不同目录里有**同名可执行文件**，**第一个找到的文件会被执行**，后面的被忽略。
+- 可以用 `which 命令名` 查看实际执行的是哪个路径。
+
+#### 如何增加/减少默认路径
+
+在 shell 配置文件里修改，例如 macOS 默认的 zsh：
+
+```bash
+# 把 /Users/jiayifan/CLionProjects/untitled2/system 加到最前面（优先使用）
+export PATH="/Users/jiayifan/CLionProjects/untitled2/system:$PATH"
+
+# 或者加到最后（优先使用系统已有的同名命令）
+export PATH="$PATH:/Users/jiayifan/CLionProjects/untitled2/system"
+```
+
+修改后执行 `source ~/.zshrc` 或重启终端生效。要减少路径，直接编辑该文件并删除对应段即可。
+
+#### 当前目录与 `./`
+
+- `./` 表示**当前工作目录**。
+- 当前目录默认**不在 `PATH` 里**，所以要执行当前目录下的程序必须写 `./问题1`，而不是只写 `问题1`。
+- 可以用 `pwd` 命令查看当前所在目录。
+- 如果把当前目录加入 `PATH`（例如 `export PATH=".:$PATH"`），就可以直接写程序名，但这样做有安全风险，不推荐。
+
+#### 什么时候会用到自定义环境变量
+
+环境变量除了 `PATH`，还经常用于：
+
+- 给程序传递配置：`HOME`、`USER`、`LANG`、`EDITOR`。
+- 控制工具行为：`CC`（指定 C 编译器）、`CFLAGS`（编译选项）。
+- CI/CD 和脚本里配置密钥、API endpoint（注意不要把敏感值写进公开仓库）。
+- 子进程继承父进程的环境；`exec` 带 `e` 的变体可以传入自定义 `envp[]` 来覆盖或精简环境。
+
 ### fflush(stdout)
 
 `fflush(stdout)` 强制把 stdout 缓冲区里的内容立即输出。常用于 `fork()` 前避免输出被父子进程重复打印。
@@ -198,6 +250,42 @@ sleep(10);           // 10 秒内可能看不到输出
 ```
 
 在终端里，`stdout` 是行缓冲，没有 `\n` 就留在缓冲区。如果输出重定向到文件，变成全缓冲，要等缓冲区满或程序退出才输出。
+
+#### 如何显式设置缓冲模式
+
+用 `setvbuf()` 可以修改 `stdout` 的缓冲方式：
+
+```c
+#include <stdio.h>
+
+int main() {
+    // 无缓冲：每个字符立即输出
+    setvbuf(stdout, NULL, _IONBF, 0);
+    printf("A");   // 立即输出 A
+
+    // 行缓冲：遇到 \n 才输出
+    setvbuf(stdout, NULL, _IOLBF, 0);
+    printf("B");   // 不输出，等 \n
+    printf("\n");  // 输出 B\n
+
+    // 全缓冲：缓冲区满或手动刷新才输出
+    setvbuf(stdout, NULL, _IOFBF, 4096);
+    printf("C");   // 不输出
+    fflush(stdout); // 输出 C
+
+    return 0;
+}
+```
+
+三种模式常量：
+
+| 常量 | 模式 |
+|------|------|
+| `_IONBF` | 无缓冲 |
+| `_IOLBF` | 行缓冲 |
+| `_IOFBF` | 全缓冲 |
+
+注意：`setvbuf()` 必须在任何输出操作之前调用，否则行为未定义。
 
 ---
 
