@@ -185,7 +185,7 @@ if (WIFEXITED(status)) {
 
 **思路**：在 `fork()` 前定义变量 `x`，观察父子进程修改 `x` 时是否互相影响。
 
-<details>
+<details markdown="1">
 <summary><strong>点击查看代码</strong></summary>
 
 ```c
@@ -237,7 +237,7 @@ int main() {
 
 **思路**：父进程打开文件，然后 `fork()`。观察父子进程都向同一个 fd 写入时会发生什么。
 
-<details>
+<details markdown="1">
 <summary><strong>点击查看代码</strong></summary>
 
 ```c
@@ -288,7 +288,7 @@ int main() {
 
 **思路**：让子进程打印 `hello`，父进程打印 `goodbye`，并确保 `hello` 一定先出现。
 
-<details>
+<details markdown="1">
 <summary><strong>点击查看代码</strong></summary>
 
 ```c
@@ -331,7 +331,7 @@ goodbye
 
 **思路**：用 `fork()` 创建子进程，在子进程中分别用 6 种 exec 变体运行 `ls -l /bin/ls`。
 
-<details>
+<details markdown="1">
 <summary><strong>点击查看代码</strong></summary>
 
 ```c
@@ -406,7 +406,7 @@ execvP
 
 **思路**：父进程用 `wait()` 等待子进程，观察返回值；再让子进程调用 `wait()`，观察会发生什么。
 
-<details>
+<details markdown="1">
 <summary><strong>点击查看代码</strong></summary>
 
 ```c
@@ -465,7 +465,7 @@ child exit code: 5
 
 **思路**：用 `waitpid()` 替代 `wait()`，指定等待某个子进程。
 
-<details>
+<details markdown="1">
 <summary><strong>点击查看代码</strong></summary>
 
 ```c
@@ -515,7 +515,7 @@ child exit code: 6
 
 **思路**：子进程关闭 `STDOUT_FILENO`，再调用 `printf()`，观察输出行为。
 
-<details>
+<details markdown="1">
 <summary><strong>点击查看代码</strong></summary>
 
 ```c
