@@ -13,7 +13,7 @@ tags:
   - exec
   - wait
   - waitpid
-excerpt: "系统整理 Unix 进程创建三件套 fork、exec、wait/waitpid 的用法，并以 4 道 OSTEP 课后题的实践代码加深理解。"
+excerpt: "系统整理 Unix 进程创建三件套 fork、exec、wait/waitpid 的用法，并以 7 道 OSTEP 课后题的实践代码加深理解。"
 toc: true
 toc_label: "目录"
 toc_icon: "list"
@@ -36,7 +36,7 @@ Unix 进程创建的核心可以概括为三句话：
 - `wait()` / `waitpid()`：如何等待子进程结束并回收资源
 - 相关概念：文件描述符、环境变量、PATH、缓冲区
 
-最后以 4 道实践题把理论落地。
+最后以 7 道实践题把理论落地。
 
 ---
 
@@ -399,6 +399,158 @@ execvP
 ```
 
 **结论**：6 种 exec 变体最终都执行了 `ls -l /bin/ls`，区别在于参数传递方式和程序搜索路径。
+
+---
+
+### 实践 5：wait() 的返回值
+
+**思路**：父进程用 `wait()` 等待子进程，观察返回值；再让子进程调用 `wait()`，观察会发生什么。
+
+<details>
+<summary><strong>点击查看代码</strong></summary>
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <errno.h>
+
+int main() {
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("fork failed");
+        exit(1);
+    } else if (pid == 0) {
+        printf("child pid = %d\n", getpid());
+
+        pid_t ret = wait(NULL);
+        printf("child wait returned: %d\n", ret);
+        if (ret == -1) {
+            perror("child wait error");
+        }
+
+        exit(5);
+    } else {
+        int status;
+        pid_t ret = wait(&status);
+        printf("parent wait returned: %d\n", ret);
+        if (WIFEXITED(status)) {
+            printf("child exit code: %d\n", WEXITSTATUS(status));
+        }
+    }
+
+    return 0;
+}
+```
+
+</details>
+
+**运行结果**：
+
+```text
+child pid = 69295
+child wait returned: -1
+child wait error: No child processes
+parent wait returned: 69295
+child exit code: 5
+```
+
+**结论**：父进程的 `wait()` 返回子进程 PID；子进程没有子进程，调用 `wait()` 返回 `-1`，`errno` 为 `ECHILD`。
+
+---
+
+### 实践 6：waitpid() 的用法
+
+**思路**：用 `waitpid()` 替代 `wait()`，指定等待某个子进程。
+
+<details>
+<summary><strong>点击查看代码</strong></summary>
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main() {
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("fork failed");
+        exit(1);
+    } else if (pid == 0) {
+        printf("child pid = %d\n", getpid());
+        sleep(1);
+        exit(6);
+    } else {
+        int status;
+        pid_t ret = waitpid(pid, &status, 0);
+        printf("waitpid returned: %d\n", ret);
+        if (WIFEXITED(status)) {
+            printf("child exit code: %d\n", WEXITSTATUS(status));
+        }
+    }
+
+    return 0;
+}
+```
+
+</details>
+
+**运行结果**：
+
+```text
+child pid = 69297
+waitpid returned: 69297
+child exit code: 6
+```
+
+**结论**：`waitpid(pid, &status, 0)` 可以指定等待某个子进程，并获取其退出状态。比 `wait()` 更灵活。
+
+---
+
+### 实践 7：关闭标准输出后 printf
+
+**思路**：子进程关闭 `STDOUT_FILENO`，再调用 `printf()`，观察输出行为。
+
+<details>
+<summary><strong>点击查看代码</strong></summary>
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main() {
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("fork failed");
+        exit(1);
+    } else if (pid == 0) {
+        close(STDOUT_FILENO);
+        printf("this should not appear\n");
+    } else {
+        wait(NULL);
+        printf("parent done\n");
+    }
+
+    return 0;
+}
+```
+
+</details>
+
+**运行结果**：
+
+```text
+parent done
+```
+
+**结论**：子进程关闭标准输出后，`printf()` 写入 fd 1 失败，没有任何输出显示。
 
 ---
 
