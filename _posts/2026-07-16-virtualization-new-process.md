@@ -552,6 +552,34 @@ parent done
 
 **结论**：子进程关闭标准输出后，`printf()` 写入 fd 1 失败，没有任何输出显示。
 
+#### 为什么 `printf()` 不报错
+
+`printf()` 只负责把数据写入 `stdout` 缓冲区。遇到 `\n` 时，缓冲区会尝试刷新，调用 `write(1, buf, len)`。但此时 fd 1 已被关闭，`write()` 返回 `-1`，`errno = EBADF`。
+
+`printf()` 本身不检查 `write()` 是否成功，它只返回成功写入缓冲区的字符数，所以程序不会报错。要检测这种输出错误，可以用 `ferror(stdout)`：
+
+```c
+#include <stdio.h>
+#include <unistd.h>
+
+int main() {
+    close(STDOUT_FILENO);
+    printf("this should not appear\n");
+
+    if (ferror(stdout)) {
+        perror("stdout error");
+    }
+
+    return 0;
+}
+```
+
+输出：
+
+```text
+stdout error: Bad file descriptor
+```
+
 ---
 
 ## 总结
