@@ -694,6 +694,97 @@ stdout error: Bad file descriptor
 
 ---
 
+### 实践 8：用 pipe 连接两个子进程
+
+**思路**：创建两个子进程，一个向管道写数据，一个从管道读数据，把第一个子进程的标准输出连接到第二个子进程的标准输入。
+
+<details markdown="1">
+<summary><strong>点击查看代码</strong></summary>
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main() {
+    int pipefd[2];
+    pipe(pipefd);
+
+    pid_t pid1 = fork();
+    if (pid1 < 0) {
+        perror("fork failed");
+        exit(1);
+    } else if (pid1 == 0) {
+        close(pipefd[0]);
+        dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[1]);
+        printf("hello from writer\n");
+        exit(0);
+    }
+
+    pid_t pid2 = fork();
+    if (pid2 < 0) {
+        perror("fork failed");
+        exit(1);
+    } else if (pid2 == 0) {
+        close(pipefd[1]);
+        dup2(pipefd[0], STDIN_FILENO);
+        close(pipefd[0]);
+        char buf[1024];
+        fgets(buf, sizeof(buf), stdin);
+        printf("reader received: %s", buf);
+        exit(0);
+    }
+
+    close(pipefd[0]);
+    close(pipefd[1]);
+    wait(NULL);
+    wait(NULL);
+
+    return 0;
+}
+```
+
+</details>
+
+**运行结果**：
+
+```text
+reader received: hello from writer
+```
+
+**关键代码逐行解释**：
+
+- `pipe(pipefd);` 创建管道，`pipefd[0]` 是读端，`pipefd[1]` 是写端。
+- 在写数据的子进程里：
+  - `close(pipefd[0]);` 关闭读端，因为该子进程只写不读。
+  - `dup2(pipefd[1], STDOUT_FILENO);` 把标准输出重定向到管道写端；此后 `printf` 的内容会进入管道。
+  - `close(pipefd[1]);` 关掉原来的写端 fd，因为标准输出已经指向它。
+  - `printf("hello from writer\n");` 向管道写入数据。
+- 在读数据的子进程里：
+  - `close(pipefd[1]);` 关闭写端，因为该子进程只读不写。
+  - `dup2(pipefd[0], STDIN_FILENO);` 把标准输入重定向到管道读端。
+  - `close(pipefd[0]);` 关掉原来的读端 fd。
+  - `char buf[1024];` 定义缓冲区，用来存放读到的数据。
+  - `fgets(buf, sizeof(buf), stdin);` 从标准输入读取一行。
+    - `buf`：存放数据的地方。
+    - `sizeof(buf)`：最多读取的字节数。
+    - `stdin`：输入流。
+  - `printf("reader received: %s", buf);` 把读到的内容打印出来。
+
+**`stdin` 是什么**：
+
+`stdin` 是 C 标准库在 `<stdio.h>` 里预定义好的全局变量，代表标准输入，默认连接键盘。问题 8 中通过 `dup2` 把它改成了连接管道读端，所以 `fgets` 实际上是从管道里读数据。
+
+**为什么标准输入输出可以改**：
+
+标准输入输出只是两个文件描述符：`stdin` 对应 fd `0`，`stdout` 对应 fd `1`。操作系统允许用 `dup2()` 把它们接到文件、管道或设备上。这就是 Shell 重定向和管道命令（如 `ls | wc`）的底层机制。
+
+**结论**：`pipe()` 配合 `dup2()` 和 `fork()`，可以让不同子进程通过标准输入输出互相传递数据。
+
+---
+
 ## 总结
 
 | 函数 | 作用 | 是否创建新进程 |
