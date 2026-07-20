@@ -471,6 +471,79 @@ struct timeval {
 
 时间戳（Timestamp）是用一个数值表示某个特定时刻，最常见的是 Unix 时间戳：从 1970-01-01 00:00:00 UTC 开始经过的秒数（或毫秒、微秒、纳秒）。它便于计算机存储和计算，常用于日志、数据库、缓存过期等场景。
 
+### 13.4 类似函数
+
+除了 `gettimeofday()`，还有几个常用的时间获取函数。
+
+#### clock_gettime()（推荐）
+
+```c
+#include <time.h>
+
+int clock_gettime(clockid_t clk_id, struct timespec *tp);
+```
+
+比 `gettimeofday()` 更现代、更灵活。
+
+常用时钟类型：
+
+| clk_id | 含义 |
+|---|---|
+| `CLOCK_REALTIME` | 系统实时时间，类似 `gettimeofday()` |
+| `CLOCK_MONOTONIC` | 单调时钟，不受系统时间调整影响 |
+| `CLOCK_PROCESS_CPUTIME_ID` | 当前进程消耗的 CPU 时间 |
+| `CLOCK_THREAD_CPUTIME_ID` | 当前线程消耗的 CPU 时间 |
+
+时间结构体：
+
+```c
+struct timespec {
+    time_t  tv_sec;   // 秒
+    long    tv_nsec;  // 纳秒，0 ~ 999999999
+};
+```
+
+`clock_gettime()` 精度是纳秒，比 `gettimeofday()` 的微秒更高。`CLOCK_MONOTONIC` 不会回退，适合计时。
+
+#### time()
+
+```c
+#include <time.h>
+
+time_t time(time_t *tloc);
+```
+
+只返回秒级时间戳：
+
+```c
+time_t now = time(NULL);
+```
+
+#### getrusage()
+
+```c
+#include <sys/resource.h>
+
+int getrusage(int who, struct rusage *usage);
+```
+
+获取进程资源使用情况，包括用户态和内核态 CPU 时间：
+
+```c
+struct rusage ru;
+getrusage(RUSAGE_SELF, &ru);
+// ru.ru_utime: 用户态 CPU 时间
+// ru.ru_stime: 内核态 CPU 时间
+```
+
+### 13.5 为什么保留了废弃的 `tz` 参数
+
+`gettimeofday()` 的第二个参数 `tz` 已废弃，但函数原型仍然保留它，主要是为了**向后兼容**。
+
+早期 `tz` 用于返回时区信息，后来发现时区信息应通过 `tzset()` / `localtime()` 等接口获取。如果直接删除 `tz` 参数，所有老代码中 `gettimeofday(&tv, &tz)` 的调用都会编译失败。
+
+因此接口保持原样，只是文档说明 `tz` 已废弃，新代码应传 `NULL`。
+
 
 ---
 
