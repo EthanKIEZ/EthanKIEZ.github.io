@@ -102,20 +102,6 @@ void foo(int n) {
 | 大对象或大数据 | 运行时加载的图片、网络数据包缓冲区 |
 | 共享或持久化数据 | 全局配置对象、多模块共享状态 |
 
-例如一个链表节点：
-
-```c
-typedef struct Node {
-    int val;
-    struct Node *next;
-} Node;
-
-Node *head = malloc(sizeof(Node));
-head->next = malloc(sizeof(Node));
-```
-
-每个节点都在堆上按需分配。
-
 ---
 
 ## 4. 虚拟内存的核心目标：透明性
