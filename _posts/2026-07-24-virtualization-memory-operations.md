@@ -149,7 +149,7 @@ free(p);               // 释放，又变成 unallocated
 
 ## 3. 不同语言的内存管理
 
-### 3.1 Python 没有 `new`，也不需要 `malloc`/`free`
+### 3.1 Python 不需要 `malloc`/`free`
 
 Python 的内存管理是自动的：创建对象时解释器在堆里分配内存，没有引用指向时自动回收。
 
@@ -159,10 +159,10 @@ lst = [1, 2, 3]
 s = "hello"
 ```
 
-这些全在堆上，不需要手动释放。Python 没有 `new` 关键字，创建对象直接：
+这些全在堆上，不需要手动释放。创建对象直接：
 
 ```python
-obj = MyClass()  # 相当于其他语言里的 new MyClass()
+obj = MyClass()
 ```
 
 ### 3.2 `MyClass()` 的输入输出
