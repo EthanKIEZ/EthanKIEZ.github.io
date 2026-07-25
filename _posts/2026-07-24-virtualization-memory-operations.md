@@ -392,25 +392,7 @@ set(ASAN_FLAGS -fsanitize=address -g -O0 -fno-omit-frame-pointer)
 target_compile_options(q01_null PRIVATE ${ASAN_FLAGS})
 ```
 
-### 6.4 `macro()` 与 `set()` 的区别
-
-| | `set()` | `macro()` |
-|--|---------|-----------|
-| 作用 | 定义变量，存数据 | 定义宏，封装命令 |
-| 调用 | `${变量名}` | `宏名(参数)` |
-
-```cmake
-macro(build_asan_prog name)
-    add_executable(${name} ${name}.c)
-    target_compile_options(${name} PRIVATE -fsanitize=address -g -O0)
-    target_link_options(${name} PRIVATE -fsanitize=address)
-endmacro()
-
-build_asan_prog(q01_null)
-build_asan_prog(q04_leak)
-```
-
-### 6.5 `foreach` 循环
+### 6.4 `foreach` 循环
 
 ```cmake
 foreach(PROG q01_null q04_leak q05_overflow q06_use_after_free q07_bad_free q08_vector)
@@ -422,7 +404,7 @@ endforeach()
 
 `PROG` 是循环变量，每轮取列表中的一个程序名。CMake 没有 C 语言的花括号 `{}`，所以用 `foreach ... endforeach()` 成对关键字表示代码块。
 
-### 6.6 `PRIVATE` 是什么
+### 6.5 `PRIVATE` 是什么
 
 `PRIVATE` 控制选项/库的可见范围：
 
@@ -434,7 +416,7 @@ endforeach()
 
 在独立可执行文件中用 `PRIVATE` 即可。
 
-### 6.7 示例：把 `null.c` 编译成带 ASan 的可执行文件
+### 6.6 示例：把 `null.c` 编译成带 ASan 的可执行文件
 
 假设 `null.c` 内容如下：
 
@@ -490,7 +472,7 @@ free(NULL) completed safely
 - 7 种常见内存错误：忘记分配、分配不够、忘记初始化、忘记释放、用完前释放、反复释放、错误调用 `free`
 - `free(NULL)` 是安全的，但 `free` 必须接收 `malloc`/`calloc`/`realloc` 返回的原始地址
 - API 是约定好的调用接口
-- CMake 是构建系统生成工具，`set()` 定义变量，`macro()` 封装命令，`foreach` 批量处理，`PRIVATE` 控制可见性
+- CMake 是构建系统生成工具，`set()` 定义变量，`foreach` 批量处理，`PRIVATE` 控制可见性
 
 > 掌握这些内存操作与构建工具细节，是完成 OSTEP 内存章节和写出稳定 C/C++ 程序的基础。
 {: .notice--primary}
