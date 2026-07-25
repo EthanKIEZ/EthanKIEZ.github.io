@@ -434,21 +434,50 @@ endforeach()
 
 在独立可执行文件中用 `PRIVATE` 即可。
 
-### 6.7 完整示例
+### 6.7 示例：把 `null.c` 编译成带 ASan 的可执行文件
 
-以下 `CMakeLists.txt` 批量生成 6 个带 ASan 的练习程序：
+假设 `null.c` 内容如下：
 
-```cmake
-set(ASAN_FLAGS -fsanitize=address -g -O0 -fno-omit-frame-pointer)
+```c
+#include <stdio.h>
+#include <stdlib.h>
 
-foreach(PROG q01_null q04_leak q05_overflow q06_use_after_free q07_bad_free q08_vector)
-    add_executable(${PROG} ${PROG}.c)
-    target_compile_options(${PROG} PRIVATE ${ASAN_FLAGS})
-    target_link_options(${PROG} PRIVATE ${ASAN_FLAGS})
-endforeach()
+int main() {
+    int *p = NULL;
+    free(p);  // free(NULL) 是安全的
+    printf("free(NULL) completed safely\n");
+    return 0;
+}
 ```
 
-写了这段配置后，不需要手动敲 `clang -fsanitize=address ...` 编译每个文件，直接 `cmake --build build` 即可。
+#### 命令行编译
+
+```bash
+clang -fsanitize=address -g -O0 -fno-omit-frame-pointer null.c -o null
+```
+
+| 参数 | 作用 |
+|------|------|
+| `-fsanitize=address` | 启用 ASan |
+| `-g` | 保留调试信息 |
+| `-O0` | 关闭优化 |
+| `-fno-omit-frame-pointer` | 保留帧指针，调用栈更准确 |
+| `null.c` | 源文件 |
+| `-o null` | 输出可执行文件名为 `null` |
+
+#### 运行
+
+```bash
+./null
+```
+
+输出：
+
+```text
+free(NULL) completed safely
+```
+
+没有 `ERROR: AddressSanitizer:` 报错，表示 `free(NULL)` 安全。
 
 ---
 
