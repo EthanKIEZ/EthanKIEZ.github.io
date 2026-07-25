@@ -105,62 +105,6 @@ free(x);    // 错误！找不到正确的元数据
 
 分配时头部供管理器用，返回后面的区域给用户；释放后用户区域会被改用来维护空闲链表。
 
-### 1.5 `calloc()` 与 `alloca()` 的区别
-
-两者名字相似，但本质不同：
-
-| | `calloc` | `alloca` |
-|--|---------|---------|
-| 分配位置 | **堆** | **栈** |
-| 初始化 | 自动清零为 0 | 不初始化 |
-| 释放方式 | 必须手动 `free` | 函数返回时自动释放 |
-| 标准性 | 标准 C | 非标准 C，是扩展 |
-| 可移植性 | 好 | 差（Windows 上叫 `_alloca`） |
-
-```c
-// calloc：在堆上分配 10 个 int，全部初始化为 0
-int *arr = calloc(10, sizeof(int));
-free(arr);
-
-// alloca：在栈上临时分配 n 个 int
-void foo(int n) {
-    int *tmp = alloca(n * sizeof(int));
-    // 函数返回时自动释放
-}
-```
-
-`alloca` 空间有限、容易栈溢出，现代代码中不推荐常规使用。
-
-### 1.6 进程地址空间不止代码、栈、堆
-
-一个进程的地址空间通常还包括：
-
-| 区域 | 内容 |
-|------|------|
-| 代码段（Text） | 程序指令 |
-| 数据段（Data） | 已初始化的全局/静态变量 |
-| BSS 段 | 未初始化的全局/静态变量 |
-| 堆（Heap） | 动态分配的内存 |
-| 栈（Stack） | 局部变量、函数调用帧 |
-| 只读数据段（ROData） | 字符串常量、`const` 全局变量 |
-| 内存映射区域 | 共享库、文件映射 |
-| 内核空间 | 操作系统内核，用户程序不可直接访问 |
-
-例如：
-
-```c
-int global_initialized = 10;    // 数据段
-int global_uninitialized;        // BSS 段
-const char *msg = "hello";       // msg 在数据段，"hello" 在只读数据段
-
-int main(int argc, char *argv[]) {
-    int local;                   // 栈
-    int *p = malloc(100);        // 堆
-    free(p);
-    return 0;
-}
-```
-
 ---
 
 ## 2. 字符串与内存状态
@@ -513,8 +457,6 @@ endforeach()
 - `malloc` 申请堆内存，返回起始地址；`free` 根据头部元数据释放对应块
 - `size_t` 是无符号整数，专门表示大小和长度
 - `malloc` 多分配的内存用于对齐、链表指针、边界标记、标志位和安全检测
-- `calloc` 在堆上分配并清零；`alloca` 在栈上临时分配，不标准且风险高
-- 进程地址空间还包括数据段、BSS、只读数据段、内存映射区域和内核空间
 - Python 自动管理内存，`MyClass()` 返回实例对象的引用
 - 7 种常见内存错误：忘记分配、分配不够、忘记初始化、忘记释放、用完前释放、反复释放、错误调用 `free`
 - `free(NULL)` 是安全的，但 `free` 必须接收 `malloc`/`calloc`/`realloc` 返回的原始地址
@@ -522,5 +464,4 @@ endforeach()
 - CMake 是构建系统生成工具，`set()` 定义变量，`macro()` 封装命令，`foreach` 批量处理，`PRIVATE` 控制可见性
 
 > 掌握这些内存操作与构建工具细节，是完成 OSTEP 内存章节和写出稳定 C/C++ 程序的基础。
-{: .notice--primary}
 {: .notice--primary}
